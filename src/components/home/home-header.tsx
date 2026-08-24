@@ -53,13 +53,13 @@ export async function HomeHeader({
           {user ? (
             <>
               <Link
-                href="/anime"
+                href="/bangumi"
                 className={cn(
                   buttonVariants({ variant: "ghost", size: "sm" }),
                   "hidden md:inline-flex"
                 )}
               >
-                {tNav("anime")}
+                {tNav("bangumi")}
               </Link>
               <span
                 className="flex size-8 items-center justify-center rounded-full bg-secondary text-xs font-semibold uppercase text-secondary-foreground"

@@ -1,11 +1,11 @@
 import { getTranslations } from "next-intl/server";
 import { Search } from "lucide-react";
-import type { AnimeCardData } from "@/server/anime/queries";
+import type { BangumiCardData } from "@/server/bangumi/queries";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
-import { AnimeCardGrid } from "@/components/home/anime-card-grid";
+import { BangumiCardGrid } from "@/components/home/bangumi-card-grid";
 
 /** Search mode: flat grid of matches with a count and a clear button. */
 export async function SearchResults({
@@ -13,7 +13,7 @@ export async function SearchResults({
   results,
 }: {
   query: string;
-  results: AnimeCardData[];
+  results: BangumiCardData[];
 }) {
   const tHome = await getTranslations("home");
   const tCommon = await getTranslations("common");
@@ -40,7 +40,7 @@ export async function SearchResults({
           title={tCommon("noResults")}
         />
       ) : (
-        <AnimeCardGrid entries={results} />
+        <BangumiCardGrid entries={results} />
       )}
     </section>
   );

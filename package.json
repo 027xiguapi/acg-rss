@@ -12,7 +12,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx src/db/seed.ts",
-    "db:backfill-episodes": "tsx src/db/backfill-episodes.ts"
+    "db:backfill-episodes": "tsx src/db/backfill-episodes.ts",
+    "db:import-feed": "tsx src/db/import-feed.ts"
   },
   "dependencies": {
     "@auth/core": "0.41.3",

@@ -1,14 +1,14 @@
 "use server";
 
-import { createHash } from "crypto";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/db";
-import { animeEpisodes, torrentItems } from "@/db/schema";
+import { bangumiEpisodes, torrentItems } from "@/db/schema";
 import { getAdminUser } from "@/server/auth/session";
-import { linkTorrent } from "@/server/anime/linker";
-import { extractInfoHash, extractSubgroup, parseTorrentTitle } from "@/lib/parser";
+import { linkTorrent } from "@/server/bangumi/linker";
+import { computeInfoHash, extractSubgroup, parseTorrentTitle } from "@/lib/parser";
+import { resolveSubgroupId } from "@/server/subgroups/resolve";
 
 export interface TorrentFormState {
   ok?: boolean;
@@ -36,19 +36,6 @@ const torrentSchema = z
     message: "needLink",
   });
 
-function sha1Hex(value: string): string {
-  return createHash("sha1").update(value).digest("hex");
-}
-
-/** Dedup key: btih from the magnet when available, else sha1(torrentUrl). */
-function computeInfoHash(magnet?: string, torrentUrl?: string): string {
-  return (
-    (magnet ? extractInfoHash(magnet) : null) ??
-    (torrentUrl ? sha1Hex(torrentUrl) : null) ??
-    sha1Hex(`${magnet ?? ""}|${torrentUrl ?? ""}`)
-  );
-}
-
 /** Remove the episode row when its last torrent is gone. */
 async function cleanupEmptyEpisode(episodeId: number | null): Promise<void> {
   if (episodeId == null) return;
@@ -58,7 +45,7 @@ async function cleanupEmptyEpisode(episodeId: number | null): Promise<void> {
     .where(eq(torrentItems.episodeId, episodeId))
     .limit(1);
   if (!row) {
-    await db.delete(animeEpisodes).where(eq(animeEpisodes.id, episodeId));
+    await db.delete(bangumiEpisodes).where(eq(bangumiEpisodes.id, episodeId));
   }
 }
 
@@ -81,6 +68,8 @@ export async function createTorrentAction(
   const data = parsed.data;
 
   const parsedTitle = parseTorrentTitle(data.title);
+  const subgroup = extractSubgroup(data.title);
+  const subgroupId = await resolveSubgroupId(subgroup);
   const inserted = await db
     .insert(torrentItems)
     .values({
@@ -90,11 +79,12 @@ export async function createTorrentAction(
       infoHash: computeInfoHash(data.magnet, data.torrentUrl),
       size: data.sizeMb != null ? Math.round(data.sizeMb * 1024 * 1024) : null,
       category: data.category,
-      animeTitle: parsedTitle.animeTitle,
+      bangumiTitle: parsedTitle.bangumiTitle,
       season: parsedTitle.season,
       episode: parsedTitle.episode,
       resolution: parsedTitle.resolution,
-      subgroup: extractSubgroup(data.title),
+      subgroup,
+      subgroupId,
     })
     .onConflictDoNothing({ target: torrentItems.infoHash })
     .returning();
@@ -151,6 +141,8 @@ export async function updateTorrentAction(
   }
 
   const parsedTitle = parseTorrentTitle(data.title);
+  const subgroup = extractSubgroup(data.title);
+  const subgroupId = await resolveSubgroupId(subgroup);
   const updated = await db
     .update(torrentItems)
     .set({
@@ -160,13 +152,14 @@ export async function updateTorrentAction(
       infoHash,
       size: data.sizeMb != null ? Math.round(data.sizeMb * 1024 * 1024) : null,
       category: data.category,
-      animeTitle: parsedTitle.animeTitle,
+      bangumiTitle: parsedTitle.bangumiTitle,
       season: parsedTitle.season,
       episode: parsedTitle.episode,
       resolution: parsedTitle.resolution,
-      subgroup: extractSubgroup(data.title),
+      subgroup,
+      subgroupId,
       // Links are re-resolved from the new title below
-      animeId: null,
+      bangumiId: null,
       episodeId: null,
     })
     .where(eq(torrentItems.id, id))

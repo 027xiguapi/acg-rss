@@ -3,20 +3,20 @@ import { asc, eq, inArray } from "drizzle-orm";
 import { getTranslations } from "next-intl/server";
 import { FileText, Tv } from "lucide-react";
 import { db } from "@/db";
-import { anime, animeEpisodes, episodeInfos } from "@/db/schema";
-import { withTitles } from "@/server/anime/queries";
+import { bangumi, bangumiEpisodes, episodeInfos } from "@/db/schema";
+import { withTitles } from "@/server/bangumi/queries";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/empty-state";
 import { Breadcrumb } from "@/components/breadcrumb";
-import { EpisodeInfosEditor } from "@/components/anime/episode-infos-editor";
+import { EpisodeInfosEditor } from "@/components/bangumi/episode-infos-editor";
 
 export const metadata: Metadata = { title: "Episode Contents" };
 
 interface PageProps {
-  searchParams: Promise<{ anime?: string }>;
+  searchParams: Promise<{ bangumi?: string }>;
 }
 
 /**
@@ -26,33 +26,33 @@ interface PageProps {
  * to any row.
  */
 export default async function AdminContentsPage({ searchParams }: PageProps) {
-  const { anime: animeParam } = await searchParams;
+  const { bangumi: bangumiParam } = await searchParams;
   const t = await getTranslations("admin");
-  const tAnime = await getTranslations("anime");
+  const tBangumi = await getTranslations("bangumi");
 
-  // Decorate with primary names from anime_infos, sorted by title
-  const seriesList = await withTitles(await db.select().from(anime));
+  // Decorate with primary names from bangumi_infos, sorted by title
+  const seriesList = await withTitles(await db.select().from(bangumi));
   if (seriesList.length === 0) {
     return (
       <div className="flex flex-col gap-6">
         <h1 className="text-2xl font-bold tracking-tight">{t("contentsTitle")}</h1>
         <EmptyState
           icon={<Tv className="size-5" />}
-          title={t("noAnime")}
+          title={t("noBangumi")}
           description={t("contentsSubtitle")}
         />
       </div>
     );
   }
 
-  const requested = Number(animeParam);
+  const requested = Number(bangumiParam);
   const selected = seriesList.find((row) => row.id === requested) ?? seriesList[0];
 
   const episodes = await db
     .select()
-    .from(animeEpisodes)
-    .where(eq(animeEpisodes.animeId, selected.id))
-    .orderBy(asc(animeEpisodes.number));
+    .from(bangumiEpisodes)
+    .where(eq(bangumiEpisodes.bangumiId, selected.id))
+    .orderBy(asc(bangumiEpisodes.number));
 
   const contentRows = episodes.length
     ? await db
@@ -86,7 +86,7 @@ export default async function AdminContentsPage({ searchParams }: PageProps) {
     <div className="flex flex-col gap-6">
       <Breadcrumb
         items={[
-          { label: t("animeTitle"), href: "/admin/anime" },
+          { label: t("bangumiTitle"), href: "/admin/bangumi" },
           { label: t("contentsTitle") },
         ]}
       />
@@ -100,7 +100,7 @@ export default async function AdminContentsPage({ searchParams }: PageProps) {
         {seriesList.map((series) => (
           <Link
             key={series.id}
-            href={`/admin/contents?anime=${series.id}`}
+            href={`/admin/contents?bangumi=${series.id}`}
             title={series.title}
             className={cn(
               "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
@@ -132,7 +132,7 @@ export default async function AdminContentsPage({ searchParams }: PageProps) {
                       href={`/admin/episode/${episode.id}`}
                       className="text-sm font-semibold underline-offset-4 hover:underline"
                     >
-                      {tAnime("episodeTitle", { episode: episode.number })}
+                      {tBangumi("episodeTitle", { episode: episode.number })}
                     </Link>
                     <div className="flex flex-wrap items-center gap-1">
                       {rows.map((row) => (

@@ -5,7 +5,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { Tv } from "lucide-react";
 import { db } from "@/db";
 import { torrentItems } from "@/db/schema";
-import { loadEpisode } from "@/server/anime/episode";
+import { loadEpisode } from "@/server/bangumi/episode";
 import { extractSubgroup } from "@/lib/parser";
 import { formatBytes, formatDateTime } from "@/lib/format";
 import { Link } from "@/i18n/navigation";
@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/empty-state";
 import { Breadcrumb } from "@/components/breadcrumb";
 import { TorrentRowActions } from "@/components/torrents/torrent-row-actions";
-import { EpisodeCoverForm } from "@/components/anime/episode-cover-form";
+import { EpisodeCoverForm } from "@/components/bangumi/episode-cover-form";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -41,7 +41,7 @@ export default async function AdminEpisodePage({ params }: PageProps) {
 
   const locale = await getLocale();
   const t = await getTranslations("admin");
-  const tAnime = await getTranslations("anime");
+  const tBangumi = await getTranslations("bangumi");
 
   const torrents = await db
     .select()
@@ -53,9 +53,9 @@ export default async function AdminEpisodePage({ params }: PageProps) {
     <div className="flex flex-col gap-6">
       <Breadcrumb
         items={[
-          { label: t("animeTitle"), href: "/admin/anime" },
-          { label: series.title, href: `/anime/${series.id}` },
-          { label: tAnime("episodeTitle", { episode: episode.number }) },
+          { label: t("bangumiTitle"), href: "/admin/bangumi" },
+          { label: series.title, href: `/bangumi/${series.id}` },
+          { label: tBangumi("episodeTitle", { episode: episode.number }) },
         ]}
       />
 
@@ -63,12 +63,12 @@ export default async function AdminEpisodePage({ params }: PageProps) {
         <div>
           <p className="text-sm text-muted-foreground">{series.title}</p>
           <h1 className="mt-1 text-2xl font-bold tracking-tight">
-            {t("episodeTitle")} · {tAnime("episodeTitle", { episode: episode.number })}
+            {t("episodeTitle")} · {tBangumi("episodeTitle", { episode: episode.number })}
           </h1>
           <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
-            <Badge variant="outline">{tAnime("seasonLabel", { season: series.season })}</Badge>
+            <Badge variant="outline">{tBangumi("seasonLabel", { season: series.season })}</Badge>
             {series.year ? <Badge variant="outline">{series.year}</Badge> : null}
-            <Badge variant="outline">{tAnime("variantCount", { count: torrents.length })}</Badge>
+            <Badge variant="outline">{tBangumi("variantCount", { count: torrents.length })}</Badge>
             <Badge variant="outline">
               {t("updatedAt")}: {formatDateTime(episode.updatedAt, locale)}
             </Badge>
@@ -87,7 +87,7 @@ export default async function AdminEpisodePage({ params }: PageProps) {
           <CardTitle className="flex flex-wrap items-center justify-between gap-2 text-base">
             {t("coverSection")}
             <Link
-              href={`/admin/contents?anime=${series.id}`}
+              href={`/admin/contents?bangumi=${series.id}`}
               className="text-sm font-medium text-primary underline-offset-4 hover:underline"
             >
               {t("contentsLink")}
@@ -107,8 +107,8 @@ export default async function AdminEpisodePage({ params }: PageProps) {
           {torrents.length === 0 ? (
             <EmptyState
               icon={<Tv className="size-5" />}
-              title={tAnime("noTorrents")}
-              description={tAnime("noTorrentsHint")}
+              title={tBangumi("noTorrents")}
+              description={tBangumi("noTorrentsHint")}
               className="border-0 py-8"
             />
           ) : (

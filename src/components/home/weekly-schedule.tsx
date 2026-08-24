@@ -1,18 +1,18 @@
 import { getTranslations } from "next-intl/server";
-import type { AnimeCardData } from "@/server/anime/queries";
+import type { BangumiCardData } from "@/server/bangumi/queries";
 import { Badge } from "@/components/ui/badge";
-import { AnimeCardGrid } from "@/components/home/anime-card-grid";
+import { BangumiCardGrid } from "@/components/home/bangumi-card-grid";
 
 /** Default mode: one section per weekly air day plus "unscheduled" at the end. */
 export async function WeeklySchedule({
   daySections,
   unscheduled,
 }: {
-  daySections: { day: number; entries: AnimeCardData[] }[];
-  unscheduled: AnimeCardData[];
+  daySections: { day: number; entries: BangumiCardData[] }[];
+  unscheduled: BangumiCardData[];
 }) {
   const tHome = await getTranslations("home");
-  const tAnime = await getTranslations("anime");
+  const tBangumi = await getTranslations("bangumi");
   // ISO weekday of today (1=Mon … 7=Sun)
   const todayIso = ((new Date().getDay() + 6) % 7) + 1;
 
@@ -22,7 +22,7 @@ export async function WeeklySchedule({
         <section key={day} className="flex flex-col gap-3">
           <h2 className="flex items-center gap-2 text-base font-semibold">
             <span className="h-4 w-1 rounded-full bg-primary" />
-            {tAnime(`weekdays.${day}`)}
+            {tBangumi(`weekdays.${day}`)}
             <span className="text-sm font-normal text-muted-foreground">
               {entries.length}
             </span>
@@ -35,7 +35,7 @@ export async function WeeklySchedule({
               {tHome("emptyDay")}
             </p>
           ) : (
-            <AnimeCardGrid entries={entries} />
+            <BangumiCardGrid entries={entries} />
           )}
         </section>
       ))}
@@ -49,7 +49,7 @@ export async function WeeklySchedule({
               {unscheduled.length}
             </span>
           </h2>
-          <AnimeCardGrid entries={unscheduled} />
+          <BangumiCardGrid entries={unscheduled} />
         </section>
       ) : null}
     </div>

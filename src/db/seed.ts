@@ -3,9 +3,9 @@ import { createHash } from "node:crypto";
 import { and, eq } from "drizzle-orm";
 import { db } from "./index";
 import {
-  anime,
-  animeEpisodes,
-  animeInfos,
+  bangumi,
+  bangumiEpisodes,
+  bangumiInfos,
   episodeInfos,
   torrentItems,
   users,
@@ -40,7 +40,7 @@ const still = (text: string): string =>
 /* ------------------------------------------------------------ seed types */
 
 /** Parsed metadata of one demo torrent. Linked torrents inherit
- * season/episode from their parent anime/episode rows. */
+ * season/episode from their parent bangumi/episode rows. */
 type SeedTorrent = {
   title: string;
   subgroup: string | null;
@@ -49,7 +49,7 @@ type SeedTorrent = {
   daysAgo: number;
   category?: string;
   description?: string;
-  animeTitle?: string;
+  bangumiTitle?: string;
   season?: number | null;
   episode?: number | null;
 };
@@ -63,7 +63,7 @@ type SeedEpisode = {
   torrents: SeedTorrent[];
 };
 
-type SeedAnime = {
+type SeedBangumi = {
   /** Which demo account owns the entry. */
   owner: "demo" | "alice";
   title: string;
@@ -81,7 +81,7 @@ type SeedAnime = {
   createdDaysAgo: number;
   synonyms: { lang: string | null; title: string }[];
   episodes: SeedEpisode[];
-  /** Torrents whose title has no episode number: linked to the anime only. */
+  /** Torrents whose title has no episode number: linked to the bangumi only. */
   unparsedTorrents?: SeedTorrent[];
 };
 
@@ -106,7 +106,7 @@ function plainEpisodes(
  * watch statuses — some with covers, some without (gradient fallback).
  */
 
-const DEMO_ANIME: SeedAnime[] = [
+const DEMO_BANGUMI: SeedBangumi[] = [
   {
     owner: "demo",
     title: "Sousou no Frieren",
@@ -171,7 +171,7 @@ const DEMO_ANIME: SeedAnime[] = [
             resolution: "1080p",
             size: 466_124_864,
             daysAgo: 16,
-            category: "动画",
+            category: "番组",
             description: "仅供参考学习，请于下载后 24 小时内删除。",
           },
           {
@@ -181,7 +181,7 @@ const DEMO_ANIME: SeedAnime[] = [
             resolution: "1080p",
             size: 471_859_200,
             daysAgo: 15,
-            category: "Anime",
+            category: "Bangumi",
           },
         ],
       },
@@ -197,7 +197,7 @@ const DEMO_ANIME: SeedAnime[] = [
             resolution: "1080p",
             size: 486_539_264,
             daysAgo: 9,
-            category: "動畫",
+            category: "番組",
           },
           {
             title:
@@ -206,7 +206,7 @@ const DEMO_ANIME: SeedAnime[] = [
             resolution: "1080p",
             size: 469_762_048,
             daysAgo: 8,
-            category: "Anime",
+            category: "Bangumi",
           },
         ],
       },
@@ -222,7 +222,7 @@ const DEMO_ANIME: SeedAnime[] = [
             resolution: "1080p",
             size: 462_422_016,
             daysAgo: 2,
-            category: "动画",
+            category: "番组",
           },
           {
             title:
@@ -231,7 +231,7 @@ const DEMO_ANIME: SeedAnime[] = [
             resolution: "1080p",
             size: 490_209_280,
             daysAgo: 1,
-            category: "動畫",
+            category: "番組",
           },
           {
             title:
@@ -240,7 +240,7 @@ const DEMO_ANIME: SeedAnime[] = [
             resolution: "1080p",
             size: 475_734_016,
             daysAgo: 1,
-            category: "Anime",
+            category: "Bangumi",
           },
         ],
       },
@@ -274,7 +274,7 @@ const DEMO_ANIME: SeedAnime[] = [
             resolution: "1080p",
             size: 524_288_000,
             daysAgo: 24,
-            category: "Anime",
+            category: "Bangumi",
           },
         ],
       },
@@ -290,7 +290,7 @@ const DEMO_ANIME: SeedAnime[] = [
             resolution: "1080p",
             size: 492_830_720,
             daysAgo: 17,
-            category: "动画",
+            category: "番组",
           },
         ],
       },
@@ -305,7 +305,7 @@ const DEMO_ANIME: SeedAnime[] = [
             resolution: "1080p",
             size: 481_267_712,
             daysAgo: 10,
-            category: "動畫",
+            category: "番組",
           },
         ],
       },
@@ -320,7 +320,7 @@ const DEMO_ANIME: SeedAnime[] = [
             resolution: "1080p",
             size: 494_927_872,
             daysAgo: 3,
-            category: "Anime",
+            category: "Bangumi",
           },
         ],
       },
@@ -394,7 +394,7 @@ const DEMO_ANIME: SeedAnime[] = [
             resolution: "1080p",
             size: 511_705_088,
             daysAgo: 18,
-            category: "動畫",
+            category: "番組",
           },
           {
             title: "[SubsPlease] Oshi no Ko S2 - 01 (1080p) [90ABCDEF].mkv",
@@ -402,7 +402,7 @@ const DEMO_ANIME: SeedAnime[] = [
             resolution: "1080p",
             size: 486_539_264,
             daysAgo: 17,
-            category: "Anime",
+            category: "Bangumi",
           },
         ],
       },
@@ -418,7 +418,7 @@ const DEMO_ANIME: SeedAnime[] = [
             resolution: "1080p",
             size: 503_316_480,
             daysAgo: 11,
-            category: "動畫",
+            category: "番組",
           },
           {
             title: "[喵萌奶茶屋&LoliHouse] 【推子】Second Season - 02 [1080p][WebRip]",
@@ -426,7 +426,7 @@ const DEMO_ANIME: SeedAnime[] = [
             resolution: "1080p",
             size: 545_259_520,
             daysAgo: 10,
-            category: "动画",
+            category: "番组",
           },
         ],
       },
@@ -442,7 +442,7 @@ const DEMO_ANIME: SeedAnime[] = [
             resolution: "1080p",
             size: 497_025_024,
             daysAgo: 4,
-            category: "動畫",
+            category: "番組",
           },
           {
             title: "[SubsPlease] Oshi no Ko S2 - 03 (720p) [ABCDEF01].mkv",
@@ -450,7 +450,7 @@ const DEMO_ANIME: SeedAnime[] = [
             resolution: "720p",
             size: 272_629_760,
             daysAgo: 3,
-            category: "Anime",
+            category: "Bangumi",
           },
         ],
       },
@@ -497,7 +497,7 @@ const DEMO_ANIME: SeedAnime[] = [
             resolution: "1080p",
             size: 629_145_600,
             daysAgo: 7,
-            category: "動畫",
+            category: "番組",
           },
         ],
       },
@@ -512,7 +512,7 @@ const DEMO_ANIME: SeedAnime[] = [
             resolution: "1080p",
             size: 637_534_208,
             daysAgo: 0,
-            category: "動畫",
+            category: "番組",
           },
           {
             title: "[喵萌奶茶屋] 斗破苍穹 - 03 [1080p]",
@@ -520,7 +520,7 @@ const DEMO_ANIME: SeedAnime[] = [
             resolution: "720p",
             size: 335_544_320,
             daysAgo: 0,
-            category: "动画",
+            category: "番组",
           },
         ],
       },
@@ -568,7 +568,7 @@ const DEMO_ANIME: SeedAnime[] = [
             resolution: "1080p",
             size: 503_316_480,
             daysAgo: 11,
-            category: "Anime",
+            category: "Bangumi",
           },
           {
             title: "[ANi] 我独自升级 - 03 [1080P][Baha][WEB-DL][AAC AVC][CHT]",
@@ -576,7 +576,7 @@ const DEMO_ANIME: SeedAnime[] = [
             resolution: "1080p",
             size: 524_288_000,
             daysAgo: 10,
-            category: "動畫",
+            category: "番組",
           },
         ],
       },
@@ -591,7 +591,7 @@ const DEMO_ANIME: SeedAnime[] = [
             resolution: "1080p",
             size: 498_073_600,
             daysAgo: 4,
-            category: "Anime",
+            category: "Bangumi",
           },
           {
             title: "[LoliHouse] Solo Leveling - 04 [WebRip 1080p HEVC-10bit AAC][简繁内嵌]",
@@ -599,8 +599,8 @@ const DEMO_ANIME: SeedAnime[] = [
             resolution: "1080p",
             size: 486_539_264,
             daysAgo: 3,
-            category: "动画",
-            description: "TV 动画《我独自升级》第 4 集，内嵌简繁字幕。",
+            category: "番组",
+            description: "TV 番组《我独自升级》第 4 集，内嵌简繁字幕。",
           },
         ],
       },
@@ -634,7 +634,7 @@ const DEMO_ANIME: SeedAnime[] = [
             resolution: "1080p",
             size: 2_348_810_240,
             daysAgo: 50,
-            category: "Anime",
+            category: "Bangumi",
           },
         ],
       },
@@ -650,7 +650,7 @@ const DEMO_ANIME: SeedAnime[] = [
             resolution: "1080p",
             size: 2_411_724_800,
             daysAgo: 43,
-            category: "Anime",
+            category: "Bangumi",
           },
         ],
       },
@@ -666,7 +666,7 @@ const DEMO_ANIME: SeedAnime[] = [
             resolution: "1080p",
             size: 2_390_753_280,
             daysAgo: 36,
-            category: "Anime",
+            category: "Bangumi",
           },
         ],
       },
@@ -682,7 +682,7 @@ const DEMO_ANIME: SeedAnime[] = [
             resolution: "1080p",
             size: 2_369_781_760,
             daysAgo: 29,
-            category: "Anime",
+            category: "Bangumi",
           },
         ],
       },
@@ -732,8 +732,8 @@ const DEMO_ANIME: SeedAnime[] = [
         resolution: "1080p",
         size: 2_415_919_104,
         daysAgo: 290,
-        category: "动画",
-        animeTitle: "铃芽之旅",
+        category: "番组",
+        bangumiTitle: "铃芽之旅",
       },
       {
         title: "[VCB-Studio] Suzume no Tojimari [Ma10p_1080p]",
@@ -743,7 +743,7 @@ const DEMO_ANIME: SeedAnime[] = [
         daysAgo: 200,
         category: "合集",
         description: "10bit 1080p 收藏版，附带特典映像。",
-        animeTitle: "Suzume no Tojimari",
+        bangumiTitle: "Suzume no Tojimari",
       },
     ],
   },
@@ -774,7 +774,7 @@ const DEMO_ANIME: SeedAnime[] = [
             resolution: "720p",
             size: 367_001_600,
             daysAgo: 389,
-            category: "Anime",
+            category: "Bangumi",
           },
         ],
       },
@@ -789,7 +789,7 @@ const DEMO_ANIME: SeedAnime[] = [
             resolution: "720p",
             size: 371_195_904,
             daysAgo: 384,
-            category: "Anime",
+            category: "Bangumi",
           },
         ],
       },
@@ -839,7 +839,7 @@ const DEMO_ANIME: SeedAnime[] = [
             resolution: "720p",
             size: 251_658_240,
             daysAgo: 170,
-            category: "Anime",
+            category: "Bangumi",
           },
         ],
       },
@@ -854,7 +854,7 @@ const DEMO_ANIME: SeedAnime[] = [
             resolution: "720p",
             size: 253_755_392,
             daysAgo: 168,
-            category: "Anime",
+            category: "Bangumi",
           },
         ],
       },
@@ -862,7 +862,7 @@ const DEMO_ANIME: SeedAnime[] = [
   },
 ];
 
-/** Torrents that match no tracked anime — they stay in the admin list
+/** Torrents that match no tracked bangumi — they stay in the admin list
  * until someone links or creates an entry for them. */
 const UNLINKED_TORRENTS: SeedTorrent[] = [
   {
@@ -871,8 +871,8 @@ const UNLINKED_TORRENTS: SeedTorrent[] = [
     resolution: "1080p",
     size: 513_802_240,
     daysAgo: 1,
-    category: "Anime",
-    animeTitle: "Shangri-La Frontier",
+    category: "Bangumi",
+    bangumiTitle: "Shangri-La Frontier",
     season: 1,
     episode: 5,
   },
@@ -936,7 +936,7 @@ async function insertTorrents(
 }
 
 /**
- * Seeds demo accounts and a batch of anime covering every weekday
+ * Seeds demo accounts and a batch of bangumi covering every weekday
  * section, origin, work type and watch status (plus covers, episodes
  * and releases). Safe to re-run: existing rows are left alone.
  */
@@ -962,34 +962,34 @@ async function main(): Promise<void> {
     role: "user",
   });
 
-  let createdAnime = 0;
+  let createdBangumi = 0;
   let createdEpisodes = 0;
   let createdTorrents = 0;
-  let skippedAnime = 0;
+  let skippedBangumi = 0;
 
-  for (const seed of DEMO_ANIME) {
-    // Dedup on the primary name in anime_infos (the anime row has no title)
+  for (const seed of DEMO_BANGUMI) {
+    // Dedup on the primary name in bangumi_infos (the bangumi row has no title)
     const existing = (
       await db
-        .select({ id: anime.id })
-        .from(anime)
+        .select({ id: bangumi.id })
+        .from(bangumi)
         .innerJoin(
-          animeInfos,
-          and(eq(animeInfos.animeId, anime.id), eq(animeInfos.kind, "primary"))
+          bangumiInfos,
+          and(eq(bangumiInfos.bangumiId, bangumi.id), eq(bangumiInfos.kind, "primary"))
         )
-        .where(and(eq(animeInfos.title, seed.title), eq(anime.season, seed.season)))
+        .where(and(eq(bangumiInfos.title, seed.title), eq(bangumi.season, seed.season)))
         .limit(1)
     )[0];
     if (existing) {
-      console.log(`Anime "${seed.title}" already exists — skipped`);
-      skippedAnime += 1;
+      console.log(`Bangumi "${seed.title}" already exists — skipped`);
+      skippedBangumi += 1;
       continue;
     }
 
     const owner = seed.owner === "alice" ? alice : admin;
     const row = (
       await db
-        .insert(anime)
+        .insert(bangumi)
         .values({
           userId: owner.id,
           season: seed.season,
@@ -1004,13 +1004,13 @@ async function main(): Promise<void> {
         })
         .returning()
     )[0];
-    createdAnime += 1;
+    createdBangumi += 1;
 
-    // Structured names: primary row + synonyms, mirroring saveAnimeAction
-    await db.insert(animeInfos).values([
-      { animeId: row.id, kind: "primary", lang: null, title: seed.title },
+    // Structured names: primary row + synonyms, mirroring saveBangumiAction
+    await db.insert(bangumiInfos).values([
+      { bangumiId: row.id, kind: "primary", lang: null, title: seed.title },
       ...seed.synonyms.map((s) => ({
-        animeId: row.id,
+        bangumiId: row.id,
         kind: "synonym",
         lang: s.lang,
         title: s.title,
@@ -1021,10 +1021,10 @@ async function main(): Promise<void> {
 
     if (seed.episodes.length > 0) {
       const episodeRows = await db
-        .insert(animeEpisodes)
+        .insert(bangumiEpisodes)
         .values(
           seed.episodes.map((ep) => ({
-            animeId: row.id,
+            bangumiId: row.id,
             number: ep.number,
             coverUrl: ep.coverUrl,
             createdAt: daysAgo(ep.daysAgo),
@@ -1062,12 +1062,12 @@ async function main(): Promise<void> {
             size: t.size,
             publishTime: daysAgo(t.daysAgo),
             category: t.category ?? null,
-            animeTitle: t.animeTitle ?? seed.title,
+            bangumiTitle: t.bangumiTitle ?? seed.title,
             season: t.season ?? seed.season,
             episode: ep.number,
             resolution: t.resolution,
             subgroup: t.subgroup,
-            animeId: row.id,
+            bangumiId: row.id,
             episodeId: idByNumber.get(ep.number)!,
             createdAt: daysAgo(t.daysAgo),
           });
@@ -1075,7 +1075,7 @@ async function main(): Promise<void> {
       }
     }
 
-    // Releases without a parseable episode number stay on the anime row
+    // Releases without a parseable episode number stay on the bangumi row
     for (const t of seed.unparsedTorrents ?? []) {
       torrentRows.push({
         title: t.title,
@@ -1086,12 +1086,12 @@ async function main(): Promise<void> {
         size: t.size,
         publishTime: daysAgo(t.daysAgo),
         category: t.category ?? null,
-        animeTitle: t.animeTitle ?? seed.title,
+        bangumiTitle: t.bangumiTitle ?? seed.title,
         season: t.season ?? null,
         episode: t.episode ?? null,
         resolution: t.resolution,
         subgroup: t.subgroup,
-        animeId: row.id,
+        bangumiId: row.id,
         episodeId: null,
         createdAt: daysAgo(t.daysAgo),
       });
@@ -1100,7 +1100,7 @@ async function main(): Promise<void> {
     const added = await insertTorrents(torrentRows);
     createdTorrents += added;
     console.log(
-      `Created anime "${seed.title}" (${seed.episodes.length} episodes, ${added} torrents)`
+      `Created bangumi "${seed.title}" (${seed.episodes.length} episodes, ${added} torrents)`
     );
   }
 
@@ -1114,19 +1114,19 @@ async function main(): Promise<void> {
       size: t.size,
       publishTime: daysAgo(t.daysAgo),
       category: t.category ?? null,
-      animeTitle: t.animeTitle ?? null,
+      bangumiTitle: t.bangumiTitle ?? null,
       season: t.season ?? null,
       episode: t.episode ?? null,
       resolution: t.resolution,
       subgroup: t.subgroup,
-      animeId: null,
+      bangumiId: null,
       episodeId: null,
       createdAt: daysAgo(t.daysAgo),
     }))
   );
 
   console.log(
-    `Seed complete: ${createdAnime} anime (${skippedAnime} skipped), ` +
+    `Seed complete: ${createdBangumi} bangumi (${skippedBangumi} skipped), ` +
       `${createdEpisodes} episodes, ${createdTorrents} torrents created.`
   );
   console.log("Login with demo / demo12345 (admin) or alice / alice12345.");

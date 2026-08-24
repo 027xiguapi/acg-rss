@@ -1,5 +1,6 @@
 import {
   bigint,
+  boolean,
   index,
   integer,
   pgTable,
@@ -82,8 +83,8 @@ export const verificationTokens = pgTable(
   (t) => [primaryKey({ columns: [t.identifier, t.token] })]
 );
 
-export const anime = pgTable(
-  "anime",
+export const bangumi = pgTable(
+  "bangumi",
   {
     id: serial("id").primaryKey(),
     userId: integer("user_id")
@@ -115,23 +116,23 @@ export const anime = pgTable(
       .defaultNow()
       .$onUpdate(() => new Date()),
   },
-  (t) => [index("anime_user_idx").on(t.userId)]
+  (t) => [index("bangumi_user_idx").on(t.userId)]
 );
 
 /**
- * Structured anime names: one row per name. `primary` is the display name;
+ * Structured bangumi names: one row per name. `primary` is the display name;
  * all names (primary + synonyms, any language) take part in torrent
  * matching. Lang is a free-form tag: "ja", "zh-Hans", "en", "romaji", …
  * Content is an optional free-form note attached to the name (e.g. a
  * synopsis or remark in that language).
  */
-export const animeInfos = pgTable(
-  "anime_infos",
+export const bangumiInfos = pgTable(
+  "bangumi_infos",
   {
     id: serial("id").primaryKey(),
-    animeId: integer("anime_id")
+    bangumiId: integer("bangumi_id")
       .notNull()
-      .references(() => anime.id, { onDelete: "cascade" }),
+      .references(() => bangumi.id, { onDelete: "cascade" }),
     /** "primary" | "synonym" */
     kind: varchar("kind", { length: 16 }).notNull().default("synonym"),
     lang: varchar("lang", { length: 16 }),
@@ -142,23 +143,23 @@ export const animeInfos = pgTable(
       .defaultNow(),
   },
   (t) => [
-    uniqueIndex("anime_infos_anime_title_unique").on(t.animeId, t.title),
-    index("anime_infos_anime_idx").on(t.animeId),
+    uniqueIndex("bangumi_infos_bangumi_title_unique").on(t.bangumiId, t.title),
+    index("bangumi_infos_bangumi_idx").on(t.bangumiId),
   ]
 );
 
 /**
- * One row per episode of a tracked anime. Episodes are created on demand
+ * One row per episode of a tracked bangumi. Episodes are created on demand
  * by the linker when a matching torrent has a parsed episode number;
- * torrents without one stay attached to the anime row only.
+ * torrents without one stay attached to the bangumi row only.
  */
-export const animeEpisodes = pgTable(
-  "anime_episodes",
+export const bangumiEpisodes = pgTable(
+  "bangumi_episodes",
   {
     id: serial("id").primaryKey(),
-    animeId: integer("anime_id")
+    bangumiId: integer("bangumi_id")
       .notNull()
-      .references(() => anime.id, { onDelete: "cascade" }),
+      .references(() => bangumi.id, { onDelete: "cascade" }),
     /** Episode number parsed from the release titles */
     number: integer("number").notNull(),
     /** Episode still / thumbnail URL */
@@ -172,8 +173,8 @@ export const animeEpisodes = pgTable(
       .$onUpdate(() => new Date()),
   },
   (t) => [
-    uniqueIndex("anime_episodes_anime_number_unique").on(t.animeId, t.number),
-    index("anime_episodes_anime_idx").on(t.animeId),
+    uniqueIndex("bangumi_episodes_bangumi_number_unique").on(t.bangumiId, t.number),
+    index("bangumi_episodes_bangumi_idx").on(t.bangumiId),
   ]
 );
 
@@ -188,7 +189,7 @@ export const episodeInfos = pgTable(
     id: serial("id").primaryKey(),
     episodeId: integer("episode_id")
       .notNull()
-      .references(() => animeEpisodes.id, { onDelete: "cascade" }),
+      .references(() => bangumiEpisodes.id, { onDelete: "cascade" }),
     /** Locale tag matching the UI locales: "en", "zh-CN", "ja", "ko" */
     lang: varchar("lang", { length: 16 }).notNull(),
     /** Localized episode title; null keeps the generic "Episode N" heading */
@@ -209,6 +210,20 @@ export const episodeInfos = pgTable(
   ]
 );
 
+/**
+ * Managed fansub/release groups. Each row carries a display name (matched
+ * against the subgroup parsed from torrent titles) and an optional category
+ * (e.g. language: "简中" / "繁中" / "双语" / "日文").
+ */
+export const subgroups = pgTable("subgroups", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 128 }).notNull().unique(),
+  category: varchar("category", { length: 64 }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 export const torrentItems = pgTable(
   "torrent_items",
   {
@@ -223,18 +238,22 @@ export const torrentItems = pgTable(
     publishTime: timestamp("publish_time", { withTimezone: true }),
     category: varchar("category", { length: 128 }),
     // Parsed fields (intrinsic properties of the torrent title)
-    animeTitle: text("anime_title"),
+    bangumiTitle: text("bangumi_title"),
     season: integer("season"),
     episode: integer("episode"),
     resolution: varchar("resolution", { length: 16 }),
     /** Fansub/release group parsed from the leading bracket tag */
     subgroup: varchar("subgroup", { length: 128 }),
-    /** Set by the anime linker when the title matches a tracked series */
-    animeId: integer("anime_id").references(() => anime.id, {
+    /** Optional link to a managed subgroup row (name + category) */
+    subgroupId: integer("subgroup_id").references(() => subgroups.id, {
       onDelete: "set null",
     }),
-    /** Canonical link to the episode row (only when animeId is set) */
-    episodeId: integer("episode_id").references(() => animeEpisodes.id, {
+    /** Set by the bangumi linker when the title matches a tracked series */
+    bangumiId: integer("bangumi_id").references(() => bangumi.id, {
+      onDelete: "set null",
+    }),
+    /** Canonical link to the episode row (only when bangumiId is set) */
+    episodeId: integer("episode_id").references(() => bangumiEpisodes.id, {
       onDelete: "set null",
     }),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -248,14 +267,41 @@ export const torrentItems = pgTable(
   ]
 );
 
-/** Per-user anime favorite (bookmark); one row per user and anime. */
-export const animeFavorites = pgTable(
-  "anime_favorites",
+/**
+ * RSS subscription source (e.g. a Mikan bangumi feed). One bangumi may have
+ * several feeds; each feed belongs to exactly one bangumi. Torrents fetched
+ * from a feed are linked directly to that bangumi.
+ */
+export const rssFeeds = pgTable(
+  "rss_feeds",
   {
     id: serial("id").primaryKey(),
-    animeId: integer("anime_id")
+    name: varchar("name", { length: 255 }).notNull(),
+    url: text("url").notNull(),
+    bangumiId: integer("bangumi_id")
       .notNull()
-      .references(() => anime.id, { onDelete: "cascade" }),
+      .references(() => bangumi.id, { onDelete: "cascade" }),
+    enabled: boolean("enabled").notNull().default(true),
+    lastFetchedAt: timestamp("last_fetched_at", { withTimezone: true }),
+    lastError: text("last_error"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("rss_feeds_url_unique").on(t.url),
+    index("rss_feeds_bangumi_idx").on(t.bangumiId),
+  ]
+);
+
+/** Per-user bangumi favorite (bookmark); one row per user and bangumi. */
+export const bangumiFavorites = pgTable(
+  "bangumi_favorites",
+  {
+    id: serial("id").primaryKey(),
+    bangumiId: integer("bangumi_id")
+      .notNull()
+      .references(() => bangumi.id, { onDelete: "cascade" }),
     userId: integer("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
@@ -264,19 +310,19 @@ export const animeFavorites = pgTable(
       .defaultNow(),
   },
   (t) => [
-    uniqueIndex("anime_favorites_anime_user_unique").on(t.animeId, t.userId),
-    index("anime_favorites_user_idx").on(t.userId),
+    uniqueIndex("bangumi_favorites_bangumi_user_unique").on(t.bangumiId, t.userId),
+    index("bangumi_favorites_user_idx").on(t.userId),
   ]
 );
 
-/** Per-user anime like (thumbs-up); one row per user and anime. */
-export const animeLikes = pgTable(
-  "anime_likes",
+/** Per-user bangumi like (thumbs-up); one row per user and bangumi. */
+export const bangumiLikes = pgTable(
+  "bangumi_likes",
   {
     id: serial("id").primaryKey(),
-    animeId: integer("anime_id")
+    bangumiId: integer("bangumi_id")
       .notNull()
-      .references(() => anime.id, { onDelete: "cascade" }),
+      .references(() => bangumi.id, { onDelete: "cascade" }),
     userId: integer("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
@@ -285,19 +331,19 @@ export const animeLikes = pgTable(
       .defaultNow(),
   },
   (t) => [
-    uniqueIndex("anime_likes_anime_user_unique").on(t.animeId, t.userId),
-    index("anime_likes_user_idx").on(t.userId),
+    uniqueIndex("bangumi_likes_bangumi_user_unique").on(t.bangumiId, t.userId),
+    index("bangumi_likes_user_idx").on(t.userId),
   ]
 );
 
-/** Visitor comments on an anime; author info resolves through users. */
-export const animeComments = pgTable(
-  "anime_comments",
+/** Visitor comments on an bangumi; author info resolves through users. */
+export const bangumiComments = pgTable(
+  "bangumi_comments",
   {
     id: serial("id").primaryKey(),
-    animeId: integer("anime_id")
+    bangumiId: integer("bangumi_id")
       .notNull()
-      .references(() => anime.id, { onDelete: "cascade" }),
+      .references(() => bangumi.id, { onDelete: "cascade" }),
     userId: integer("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
@@ -306,7 +352,7 @@ export const animeComments = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (t) => [index("anime_comments_anime_idx").on(t.animeId)]
+  (t) => [index("bangumi_comments_bangumi_idx").on(t.bangumiId)]
 );
 
 /** Per-user episode favorite; one row per user and episode. */
@@ -316,7 +362,7 @@ export const episodeFavorites = pgTable(
     id: serial("id").primaryKey(),
     episodeId: integer("episode_id")
       .notNull()
-      .references(() => animeEpisodes.id, { onDelete: "cascade" }),
+      .references(() => bangumiEpisodes.id, { onDelete: "cascade" }),
     userId: integer("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
@@ -337,7 +383,7 @@ export const episodeLikes = pgTable(
     id: serial("id").primaryKey(),
     episodeId: integer("episode_id")
       .notNull()
-      .references(() => animeEpisodes.id, { onDelete: "cascade" }),
+      .references(() => bangumiEpisodes.id, { onDelete: "cascade" }),
     userId: integer("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
@@ -358,7 +404,7 @@ export const episodeComments = pgTable(
     id: serial("id").primaryKey(),
     episodeId: integer("episode_id")
       .notNull()
-      .references(() => animeEpisodes.id, { onDelete: "cascade" }),
+      .references(() => bangumiEpisodes.id, { onDelete: "cascade" }),
     userId: integer("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
@@ -372,20 +418,22 @@ export const episodeComments = pgTable(
 
 export type User = typeof users.$inferSelect;
 export type TorrentItem = typeof torrentItems.$inferSelect;
-export type Anime = typeof anime.$inferSelect;
-export type AnimeInfo = typeof animeInfos.$inferSelect;
-export type AnimeEpisode = typeof animeEpisodes.$inferSelect;
+export type Subgroup = typeof subgroups.$inferSelect;
+export type RssFeed = typeof rssFeeds.$inferSelect;
+export type Bangumi = typeof bangumi.$inferSelect;
+export type BangumiInfo = typeof bangumiInfos.$inferSelect;
+export type BangumiEpisode = typeof bangumiEpisodes.$inferSelect;
 export type EpisodeInfo = typeof episodeInfos.$inferSelect;
-export type AnimeFavorite = typeof animeFavorites.$inferSelect;
-export type AnimeLike = typeof animeLikes.$inferSelect;
-export type AnimeComment = typeof animeComments.$inferSelect;
+export type BangumiFavorite = typeof bangumiFavorites.$inferSelect;
+export type BangumiLike = typeof bangumiLikes.$inferSelect;
+export type BangumiComment = typeof bangumiComments.$inferSelect;
 export type EpisodeFavorite = typeof episodeFavorites.$inferSelect;
 export type EpisodeLike = typeof episodeLikes.$inferSelect;
 export type EpisodeComment = typeof episodeComments.$inferSelect;
 
 /**
- * An anime row with its display name resolved from anime_infos
+ * An bangumi row with its display name resolved from bangumi_infos
  * (kind=primary). Queries decorate raw rows with this before handing them
  * to UI, so components can keep using `item.title`.
  */
-export type AnimeWithTitle = Anime & { title: string };
+export type BangumiWithTitle = Bangumi & { title: string };

@@ -16,7 +16,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { logoutAction } from "@/server/auth/actions";
 
 const PUBLIC_NAV = [
-  { href: "/anime", icon: Tv, key: "anime" },
+  { href: "/bangumi", icon: Tv, key: "bangumi" },
   { href: "/torrents", icon: Magnet, key: "torrents" },
 ] as const;
 

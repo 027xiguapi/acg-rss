@@ -7,17 +7,17 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
 import { Breadcrumb } from "@/components/breadcrumb";
-import { AnimeSidebar } from "@/components/anime/detail/anime-sidebar";
-import { EpisodePicker } from "@/components/anime/detail/episode-picker";
-import { EpisodeSection } from "@/components/anime/detail/episode-section";
-import { RelatedGrid } from "@/components/anime/detail/related-grid";
-import { SocialBar } from "@/components/anime/detail/social-bar";
-import { CommentSection } from "@/components/anime/detail/comment-section";
+import { BangumiSidebar } from "@/components/bangumi/detail/bangumi-sidebar";
+import { EpisodePicker } from "@/components/bangumi/detail/episode-picker";
+import { EpisodeSection } from "@/components/bangumi/detail/episode-section";
+import { RelatedGrid } from "@/components/bangumi/detail/related-grid";
+import { SocialBar } from "@/components/bangumi/detail/social-bar";
+import { CommentSection } from "@/components/bangumi/detail/comment-section";
 import { posterTint } from "@/lib/poster";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
-import { loadEpisode, loadEpisodeDetail } from "@/server/anime/episode";
-import { loadEpisodeSocial } from "@/server/anime/social";
+import { loadEpisode, loadEpisodeDetail } from "@/server/bangumi/episode";
+import { loadEpisodeSocial } from "@/server/bangumi/social";
 import { getAdminUser, getSessionUser } from "@/server/auth/session";
 
 interface PageProps {
@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 /**
- * AGE-style episode detail page, mirroring the anime detail layout:
+ * AGE-style episode detail page, mirroring the bangumi detail layout:
  * sidebar with poster, stats and basic info; main column with the episode
  * cover as a player-style banner, synopsis, prev/next + download actions,
  * an episode picker highlighting the current episode, and the release
@@ -50,7 +50,7 @@ export default async function EpisodeDetailPage({ params }: PageProps) {
   const user = await getSessionUser();
   const social = await loadEpisodeSocial(episodeId, user?.id ?? null);
   const locale = await getLocale();
-  const t = await getTranslations("anime");
+  const t = await getTranslations("bangumi");
 
   // Localized title/synopsis: the visitor's locale first, then any language
   const info = detail.infos.find((row) => row.lang === locale) ?? detail.infos[0];
@@ -61,14 +61,14 @@ export default async function EpisodeDetailPage({ params }: PageProps) {
     <div className="flex flex-col gap-6">
       <Breadcrumb
         items={[
-          { label: t("title"), href: "/anime" },
-          { label: series.title, href: `/anime/${series.id}` },
+          { label: t("title"), href: "/bangumi" },
+          { label: series.title, href: `/bangumi/${series.id}` },
           { label: t("episodeTitle", { episode: episode.number }) },
         ]}
       />
 
       <div className="grid items-start gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
-        <AnimeSidebar
+        <BangumiSidebar
           item={series}
           primaryTitle={seriesDetail.primaryTitle}
           synonyms={seriesDetail.synonyms}
@@ -80,7 +80,7 @@ export default async function EpisodeDetailPage({ params }: PageProps) {
         <div className="flex min-w-0 max-w-[1024px] flex-col gap-5">
           <header className="flex flex-col gap-2">
             <Link
-              href={`/anime/${series.id}`}
+              href={`/bangumi/${series.id}`}
               className="text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               {series.title}

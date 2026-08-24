@@ -1,17 +1,17 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Tv } from "lucide-react";
-import { getAnimeIndex } from "@/server/anime/queries";
+import { getBangumiIndex } from "@/server/bangumi/queries";
 import { getSessionUser } from "@/server/auth/session";
-import { AnimeFormDialog } from "@/components/anime/anime-form-dialog";
+import { BangumiFormDialog } from "@/components/bangumi/bangumi-form-dialog";
 import { HomeHeader } from "@/components/home/home-header";
 import { SearchResults } from "@/components/home/search-results";
 import { WeeklySchedule } from "@/components/home/weekly-schedule";
 import { EmptyState } from "@/components/empty-state";
 
 /**
- * Mikan-style public index: tracked anime grouped by weekly air day, with a
+ * Mikan-style public index: tracked bangumi grouped by weekly air day, with a
  * title search and login/register in the header. Public for everyone; the
- * management view lives at /anime.
+ * management view lives at /bangumi.
  */
 export default async function HomePage({
   params,
@@ -29,7 +29,7 @@ export default async function HomePage({
   const [tHome, tCommon, index] = await Promise.all([
     getTranslations("home"),
     getTranslations("common"),
-    getAnimeIndex(query),
+    getBangumiIndex(query),
   ]);
 
   return (
@@ -43,7 +43,7 @@ export default async function HomePage({
           <EmptyState
             icon={<Tv className="size-5" />}
             title={tHome("empty")}
-            action={user?.role === "admin" ? <AnimeFormDialog /> : undefined}
+            action={user?.role === "admin" ? <BangumiFormDialog /> : undefined}
           />
         ) : (
           <WeeklySchedule

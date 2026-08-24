@@ -2,32 +2,32 @@ import "dotenv/config";
 import { eq, isNotNull } from "drizzle-orm";
 import { db } from "./index";
 import { torrentItems } from "./schema";
-import { findOrCreateEpisode } from "../server/anime/linker";
+import { findOrCreateEpisode } from "../server/bangumi/linker";
 
 /**
- * One-off backfill for the anime → episode → torrent hierarchy: creates
- * episode rows for torrents already linked to an anime with a parsed
+ * One-off backfill for the bangumi → episode → torrent hierarchy: creates
+ * episode rows for torrents already linked to an bangumi with a parsed
  * episode number, and stores the link on each torrent. Safe to re-run.
  */
 async function main(): Promise<void> {
   const rows = await db
     .select({
       id: torrentItems.id,
-      animeId: torrentItems.animeId,
+      bangumiId: torrentItems.bangumiId,
       episode: torrentItems.episode,
       episodeId: torrentItems.episodeId,
     })
     .from(torrentItems)
-    .where(isNotNull(torrentItems.animeId));
+    .where(isNotNull(torrentItems.bangumiId));
 
   let linked = 0;
   let skipped = 0;
   for (const row of rows) {
-    if (row.episodeId || row.animeId == null || row.episode == null) {
+    if (row.episodeId || row.bangumiId == null || row.episode == null) {
       skipped++;
       continue;
     }
-    const episodeId = await findOrCreateEpisode(row.animeId, row.episode);
+    const episodeId = await findOrCreateEpisode(row.bangumiId, row.episode);
     await db
       .update(torrentItems)
       .set({ episodeId })
