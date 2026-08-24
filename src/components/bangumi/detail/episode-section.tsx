@@ -1,4 +1,4 @@
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Settings2 } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -7,9 +7,15 @@ import { TorrentReleaseRow } from "@/components/torrents/torrent-release-row";
 import { extractSubgroup } from "@/lib/parser";
 import type { TorrentItem } from "@/db/schema";
 
+/** Subgroup shown for a release: stored field, else parsed from the title. */
+function subgroupOf(torrent: TorrentItem): string | null {
+  return torrent.subgroup ?? extractSubgroup(torrent.title) ?? null;
+}
+
 /**
  * All release variants of one episode (or of the "unknown episode" group),
- * with subgroup badges and a link to the per-episode page.
+ * grouped by subgroup (alphabetical, unknown last), with subgroup badges
+ * and a link to the per-episode page.
  */
 export function EpisodeSection({
   label,
@@ -26,10 +32,25 @@ export function EpisodeSection({
 }) {
   const t = useTranslations("bangumi");
   const tAdmin = useTranslations("admin");
+  const locale = useLocale();
 
-  const subgroups = new Set(
-    torrents.map((torrent) => torrent.subgroup ?? extractSubgroup(torrent.title)).filter(Boolean)
-  );
+  // Group variants by subgroup. The incoming newest-first order is kept
+  // inside each group; groups are ordered by name (locale-aware).
+  const groups = new Map<string | null, TorrentItem[]>();
+  for (const torrent of torrents) {
+    const key = subgroupOf(torrent);
+    const list = groups.get(key);
+    if (list) list.push(torrent);
+    else groups.set(key, [torrent]);
+  }
+  const collator = new Intl.Collator(locale);
+  const orderedGroups = [...groups.entries()].sort(([a], [b]) => {
+    if (a === null) return 1;
+    if (b === null) return -1;
+    return collator.compare(a, b);
+  });
+  const subgroupNames = orderedGroups.flatMap(([name]) => (name ? [name] : []));
+  const orderedTorrents = orderedGroups.flatMap(([, list]) => list);
 
   return (
     <Card>
@@ -55,7 +76,7 @@ export function EpisodeSection({
             ) : null}
           </div>
           <div className="flex flex-wrap items-center gap-1">
-            {[...subgroups].map((group) => (
+            {subgroupNames.map((group) => (
               <Badge key={group} variant="secondary">
                 {group}
               </Badge>
@@ -68,7 +89,7 @@ export function EpisodeSection({
           <p className="py-2 text-xs text-muted-foreground">{t("noTorrents")}</p>
         ) : (
           <div className="flex flex-col">
-            {torrents.map((torrent) => (
+            {orderedTorrents.map((torrent) => (
               <TorrentReleaseRow key={torrent.id} torrent={torrent} />
             ))}
           </div>

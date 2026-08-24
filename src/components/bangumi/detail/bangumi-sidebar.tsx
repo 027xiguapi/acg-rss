@@ -3,7 +3,9 @@ import { ListVideo, Magnet, Sparkles } from "lucide-react";
 import { BangumiPoster } from "@/components/bangumi/detail/bangumi-poster";
 import { StatTile } from "@/components/bangumi/detail/stat-tile";
 import { BasicInfoCard } from "@/components/bangumi/detail/basic-info-card";
+import { RelatedGrid } from "@/components/bangumi/detail/related-grid";
 import type { BangumiWithTitle } from "@/db/schema";
+import type { RelatedEntry } from "@/server/bangumi/detail";
 
 /** Left column of the detail page: poster, quick stats and basic info. */
 export function BangumiSidebar({
@@ -13,6 +15,7 @@ export function BangumiSidebar({
   episodeCount,
   torrentCount,
   latestEpisode,
+  related,
 }: {
   item: BangumiWithTitle;
   primaryTitle: string;
@@ -20,6 +23,7 @@ export function BangumiSidebar({
   episodeCount: number;
   torrentCount: number;
   latestEpisode: number | null;
+  related: RelatedEntry[];
 }) {
   const t = useTranslations("bangumi");
 
@@ -47,6 +51,7 @@ export function BangumiSidebar({
       </div>
 
       <BasicInfoCard item={item} primaryTitle={primaryTitle} synonyms={synonyms} />
+      <RelatedGrid entries={related} />
     </aside>
   );
 }

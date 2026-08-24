@@ -10,7 +10,6 @@ import { Breadcrumb } from "@/components/breadcrumb";
 import { BangumiSidebar } from "@/components/bangumi/detail/bangumi-sidebar";
 import { EpisodePicker } from "@/components/bangumi/detail/episode-picker";
 import { EpisodeSection } from "@/components/bangumi/detail/episode-section";
-import { RelatedGrid } from "@/components/bangumi/detail/related-grid";
 import { SocialBar } from "@/components/bangumi/detail/social-bar";
 import { CommentSection } from "@/components/bangumi/detail/comment-section";
 import { posterTint } from "@/lib/poster";
@@ -75,6 +74,7 @@ export default async function EpisodeDetailPage({ params }: PageProps) {
           episodeCount={seriesDetail.episodes.length}
           torrentCount={seriesDetail.torrentCount}
           latestEpisode={seriesDetail.latestEpisode}
+          related={seriesDetail.related}
         />
 
         <div className="flex min-w-0 max-w-[1024px] flex-col gap-5">
@@ -193,7 +193,6 @@ export default async function EpisodeDetailPage({ params }: PageProps) {
           />
         </div>
 
-        <RelatedGrid entries={seriesDetail.related} />
       </div>
     </div>
   );

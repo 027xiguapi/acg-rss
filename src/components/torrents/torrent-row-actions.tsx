@@ -29,9 +29,9 @@ export function TorrentRowActions({
   const href = magnet ?? torrentUrl ?? null;
 
   async function copyMagnet() {
-    if (!magnet) return;
+    if (!href) return;
     try {
-      await navigator.clipboard.writeText(magnet);
+      await navigator.clipboard.writeText(href);
       toast(tCommon("copied"), "success");
     } catch {
       toast(tCommon("error"), "error");
@@ -53,9 +53,9 @@ export function TorrentRowActions({
       <Button
         variant="ghost"
         size="icon"
-        aria-label={t("copyMagnet")}
-        title={t("copyMagnet")}
-        disabled={!magnet}
+        aria-label={t("copyLink")}
+        title={t("copyLink")}
+        disabled={!href}
         onClick={copyMagnet}
       >
         <Copy />
