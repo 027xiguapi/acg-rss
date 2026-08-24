@@ -76,6 +76,22 @@ function guessSeriesTitle(title: string): string | undefined {
   return text;
 }
 
+/** Tokens that mark a bracket tag as quality info rather than a fansub group */
+const NOT_A_GROUP_RE =
+  /\b(1080|720|2160|480|HEVC|AVC|x26[45]|h26[45]|AAC|FLAC|AC3|10bit|8bit|WEB|BD|DVD|GB|MB|BIG5|CHS|CHT|v\d)\b/i;
+
+/**
+ * Extract the release subgroup from a fansub-style title, e.g.
+ * "[喵萌奶茶屋&LoliHouse] 欺诈游戏 - 20 [...]" → "喵萌奶茶屋&LoliHouse".
+ */
+export function extractSubgroup(title: string): string | undefined {
+  const match = /^\s*[[({]([^\])}]{1,50})[\])}]/.exec(title);
+  if (!match) return undefined;
+  const name = match[1].trim();
+  if (!name || NOT_A_GROUP_RE.test(name)) return undefined;
+  return name;
+}
+
 const BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 
 /** Decode a base32 string (used by some magnet links) into a hex string. */

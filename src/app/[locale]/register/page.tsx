@@ -34,7 +34,7 @@ export default async function RegisterPage({
   setRequestLocale(locale);
 
   const user = await getSessionUser();
-  if (user) redirect(`/${locale}/dashboard`);
+  if (user) redirect(`/${locale}`);
 
   const t = await getTranslations("auth");
 

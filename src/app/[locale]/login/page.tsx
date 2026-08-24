@@ -34,7 +34,18 @@ export default async function LoginPage({
   setRequestLocale(locale);
 
   const user = await getSessionUser();
-  if (user) redirect(`/${locale}/dashboard`);
+  if (user) redirect(`/${locale}`);
+
+  // Only offer buttons for providers whose env keys are configured, matching
+  // the providers actually enabled in src/auth.ts.
+  const providers = {
+    github: Boolean(
+      process.env.AUTH_GITHUB_ID && process.env.AUTH_GITHUB_SECRET
+    ),
+    google: Boolean(
+      process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET
+    ),
+  };
 
   const t = await getTranslations("auth");
 
@@ -60,7 +71,7 @@ export default async function LoginPage({
             <CardDescription>{t("loginSubtitle")}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            <LoginForm />
+            <LoginForm providers={providers} />
             <p className="text-center text-sm text-muted-foreground">
               {t("noAccount")}{" "}
               <Link

@@ -2,37 +2,31 @@
 
 import * as React from "react";
 import { useTranslations } from "next-intl";
-import { Copy, Download, Loader2 } from "lucide-react";
-import { downloadNowAction } from "@/server/downloads/actions";
-import { Button } from "@/components/ui/button";
+import { Copy, Download, Trash2 } from "lucide-react";
+import { deleteTorrentAction } from "@/server/torrents/actions";
+import type { TorrentItem } from "@/db/schema";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { useToast } from "@/components/toast";
+import { cn } from "@/lib/utils";
+import { TorrentFormDialog } from "@/components/torrents/torrent-form-dialog";
 
 export function TorrentRowActions({
-  torrentId,
+  torrent,
   magnet,
+  torrentUrl,
 }: {
-  torrentId: number;
+  /** Present in the management page — renders edit / delete. */
+  torrent?: TorrentItem;
   magnet: string | null;
+  torrentUrl?: string | null;
 }) {
   const t = useTranslations("torrents");
   const tCommon = useTranslations("common");
   const toast = useToast();
-  const [pending, startTransition] = React.useTransition();
 
-  function download() {
-    startTransition(async () => {
-      const fd = new FormData();
-      fd.set("torrentId", String(torrentId));
-      const result = await downloadNowAction(fd);
-      if (result.ok) {
-        toast(t("addedToQueue"), "success");
-      } else if (result.error === "noClient") {
-        toast(t("notBound"), "error");
-      } else {
-        toast(tCommon("error"), "error");
-      }
-    });
-  }
+  // Prefer the magnet (hands off to the torrent client directly);
+  // fall back to the .torrent file link.
+  const href = magnet ?? torrentUrl ?? null;
 
   async function copyMagnet() {
     if (!magnet) return;
@@ -45,7 +39,17 @@ export function TorrentRowActions({
   }
 
   return (
-    <div className="flex items-center justify-end gap-1">
+    <div className="flex items-center gap-1">
+      {href ? (
+        <a
+          href={href}
+          aria-label={tCommon("download")}
+          title={tCommon("download")}
+          className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "text-primary")}
+        >
+          <Download />
+        </a>
+      ) : null}
       <Button
         variant="ghost"
         size="icon"
@@ -56,17 +60,28 @@ export function TorrentRowActions({
       >
         <Copy />
       </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        aria-label={t("downloadNow")}
-        title={t("downloadNow")}
-        disabled={pending}
-        onClick={download}
-        className="text-primary hover:text-primary"
-      >
-        {pending ? <Loader2 className="animate-spin" /> : <Download />}
-      </Button>
+      {torrent ? (
+        <>
+          <TorrentFormDialog torrent={torrent} />
+          <form
+            action={deleteTorrentAction}
+            onSubmit={(e) => {
+              if (!confirm(t("deleteConfirm"))) e.preventDefault();
+            }}
+          >
+            <input type="hidden" name="id" value={torrent.id} />
+            <Button
+              type="submit"
+              variant="ghost"
+              size="icon"
+              aria-label={tCommon("delete")}
+              className="text-destructive hover:text-destructive"
+            >
+              <Trash2 />
+            </Button>
+          </form>
+        </>
+      ) : null}
     </div>
   );
 }

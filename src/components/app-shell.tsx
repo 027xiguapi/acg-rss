@@ -3,29 +3,21 @@
 import * as React from "react";
 import { useTranslations } from "next-intl";
 import {
-  Download,
-  LayoutDashboard,
   Magnet,
   Menu,
-  Rss,
-  Settings,
-  SlidersHorizontal,
+  Tv,
   X,
 } from "lucide-react";
 import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { logoutAction } from "@/server/auth/actions";
 
-const NAV_ITEMS = [
-  { href: "/dashboard", icon: LayoutDashboard, key: "dashboard" },
-  { href: "/feeds", icon: Rss, key: "feeds" },
+const PUBLIC_NAV = [
+  { href: "/anime", icon: Tv, key: "anime" },
   { href: "/torrents", icon: Magnet, key: "torrents" },
-  { href: "/rules", icon: SlidersHorizontal, key: "rules" },
-  { href: "/downloads", icon: Download, key: "downloads" },
-  { href: "/settings", icon: Settings, key: "settings" },
 ] as const;
 
 function isActive(pathname: string, href: string): boolean {
@@ -36,7 +28,7 @@ export function AppShell({
   username,
   children,
 }: {
-  username: string;
+  username: string | null;
   children: React.ReactNode;
 }) {
   const t = useTranslations("nav");
@@ -44,24 +36,42 @@ export function AppShell({
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
+interface NavItem {
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  key: string;
+}
+
+function renderItem(
+  { href, icon: Icon, key }: NavItem,
+  pathname: string,
+  t: (key: string) => string,
+  onClose: () => void
+) {
+  return (
+    <Link
+      key={href}
+      href={href}
+      onClick={onClose}
+      className={cn(
+        "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+        isActive(pathname, href)
+          ? "bg-primary/10 text-primary"
+          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+      )}
+    >
+      <Icon className="size-4" />
+      {t(key)}
+    </Link>
+  );
+}
+
+  const renderWithProps = (item: NavItem) =>
+    renderItem(item, pathname, t, () => setMobileOpen(false));
+
   const nav = (
     <nav className="flex flex-col gap-1 px-3">
-      {NAV_ITEMS.map(({ href, icon: Icon, key }) => (
-        <Link
-          key={href}
-          href={href}
-          onClick={() => setMobileOpen(false)}
-          className={cn(
-            "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-            isActive(pathname, href)
-              ? "bg-primary/10 text-primary"
-              : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-          )}
-        >
-          <Icon className="size-4" />
-          {t(key)}
-        </Link>
-      ))}
+      {PUBLIC_NAV.map(renderWithProps)}
     </nav>
   );
 
@@ -75,23 +85,40 @@ export function AppShell({
       </div>
       <div className="flex-1 overflow-y-auto py-3">{nav}</div>
       <div className="border-t p-3">
-        <div className="flex items-center justify-between gap-2 px-2 pb-3">
-          <div className="flex min-w-0 items-center gap-2">
-            <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-semibold uppercase text-secondary-foreground">
-              {username.slice(0, 1)}
-            </span>
-            <span className="truncate text-sm font-medium">{username}</span>
-          </div>
-        </div>
-        <div className="flex items-center justify-between gap-2">
-          <LocaleSwitcher />
-          <ThemeToggle />
-        </div>
-        <form action={logoutAction} className="mt-3">
-          <Button type="submit" variant="outline" size="sm" className="w-full">
-            {t("logout")}
-          </Button>
-        </form>
+        {username ? (
+          <>
+            <div className="flex items-center justify-between gap-2 px-2 pb-3">
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-semibold uppercase text-secondary-foreground">
+                  {username.slice(0, 1)}
+                </span>
+                <span className="truncate text-sm font-medium">{username}</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <LocaleSwitcher />
+              <ThemeToggle />
+            </div>
+            <form action={logoutAction} className="mt-3">
+              <Button type="submit" variant="outline" size="sm" className="w-full">
+                {t("logout")}
+              </Button>
+            </form>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center justify-between gap-2 px-2 pb-3">
+              <LocaleSwitcher />
+              <ThemeToggle />
+            </div>
+            <Link
+              href="/login"
+              className={cn(buttonVariants({ size: "sm" }), "w-full")}
+            >
+              {t("login")}
+            </Link>
+          </>
+        )}
       </div>
     </div>
   );

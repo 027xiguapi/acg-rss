@@ -1,13 +1,14 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
+import { AuthError } from "next-auth";
 import { getLocale } from "next-intl/server";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/db";
 import { users } from "@/db/schema";
-import { hashPassword, verifyPassword } from "./password";
-import { clearSessionCookie, setSessionCookie } from "./session";
+import { hashPassword } from "./password";
+import { signIn, signOut } from "@/auth";
 
 export type AuthState = { error?: string };
 
@@ -42,7 +43,7 @@ export async function registerAction(
   if (password !== confirmPassword) return { error: "passwordMismatch" };
 
   const existing = await db
-    .select({ id: users.id, username: users.username, email: users.email })
+    .select({ id: users.id })
     .from(users)
     .where(eq(users.username, username));
   if (existing.length > 0) return { error: "usernameTaken" };
@@ -55,14 +56,30 @@ export async function registerAction(
   if (emailTaken.length > 0) return { error: "emailTaken" };
 
   const passwordHash = await hashPassword(password);
-  const inserted = await db
-    .insert(users)
-    .values({ username, email: email.toLowerCase(), passwordHash })
-    .returning({ id: users.id });
+  // Bootstrap: the first ever account becomes the administrator
+  const [{ total }] = await db
+    .select({ total: sql<number>`count(*)::int` })
+    .from(users);
+  await db.insert(users).values({
+    username,
+    name: username,
+    email: email.toLowerCase(),
+    passwordHash,
+    role: total === 0 ? "admin" : "user",
+  });
 
-  await setSessionCookie(inserted[0].id);
+  try {
+    await signIn("credentials", {
+      identity: username,
+      password,
+      redirect: false,
+    });
+  } catch (error) {
+    if (error instanceof AuthError) return { error: "generic" };
+    throw error;
+  }
   const locale = await getLocale();
-  redirect(`/${locale}/dashboard`);
+  redirect(`/${locale}`);
 }
 
 export async function loginAction(
@@ -76,33 +93,26 @@ export async function loginAction(
   if (!parsed.success) return { error: "invalidCredentials" };
 
   const { identity, password } = parsed.data;
-  const rows = await db
-    .select()
-    .from(users)
-    .where(eq(users.username, identity))
-    .limit(1);
-
-  let user = rows[0];
-  if (!user) {
-    const byEmail = await db
-      .select()
-      .from(users)
-      .where(eq(users.email, identity.toLowerCase()))
-      .limit(1);
-    user = byEmail[0];
+  try {
+    await signIn("credentials", { identity, password, redirect: false });
+  } catch (error) {
+    if (error instanceof AuthError) return { error: "invalidCredentials" };
+    throw error;
   }
-
-  if (!user || !(await verifyPassword(password, user.passwordHash))) {
-    return { error: "invalidCredentials" };
-  }
-
-  await setSessionCookie(user.id);
   const locale = await getLocale();
-  redirect(`/${locale}/dashboard`);
+  redirect(`/${locale}`);
+}
+
+/** Sign in with an OAuth provider (buttons on the login page). */
+export async function oauthSignInAction(
+  provider: "github" | "google"
+): Promise<void> {
+  const locale = await getLocale();
+  await signIn(provider, { redirectTo: `/${locale}` });
 }
 
 export async function logoutAction(): Promise<void> {
-  await clearSessionCookie();
+  await signOut({ redirect: false });
   const locale = await getLocale();
   redirect(`/${locale}/login`);
 }
