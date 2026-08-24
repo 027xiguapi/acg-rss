@@ -248,12 +248,140 @@ export const torrentItems = pgTable(
   ]
 );
 
+/** Per-user anime favorite (bookmark); one row per user and anime. */
+export const animeFavorites = pgTable(
+  "anime_favorites",
+  {
+    id: serial("id").primaryKey(),
+    animeId: integer("anime_id")
+      .notNull()
+      .references(() => anime.id, { onDelete: "cascade" }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("anime_favorites_anime_user_unique").on(t.animeId, t.userId),
+    index("anime_favorites_user_idx").on(t.userId),
+  ]
+);
+
+/** Per-user anime like (thumbs-up); one row per user and anime. */
+export const animeLikes = pgTable(
+  "anime_likes",
+  {
+    id: serial("id").primaryKey(),
+    animeId: integer("anime_id")
+      .notNull()
+      .references(() => anime.id, { onDelete: "cascade" }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("anime_likes_anime_user_unique").on(t.animeId, t.userId),
+    index("anime_likes_user_idx").on(t.userId),
+  ]
+);
+
+/** Visitor comments on an anime; author info resolves through users. */
+export const animeComments = pgTable(
+  "anime_comments",
+  {
+    id: serial("id").primaryKey(),
+    animeId: integer("anime_id")
+      .notNull()
+      .references(() => anime.id, { onDelete: "cascade" }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    content: text("content").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("anime_comments_anime_idx").on(t.animeId)]
+);
+
+/** Per-user episode favorite; one row per user and episode. */
+export const episodeFavorites = pgTable(
+  "episode_favorites",
+  {
+    id: serial("id").primaryKey(),
+    episodeId: integer("episode_id")
+      .notNull()
+      .references(() => animeEpisodes.id, { onDelete: "cascade" }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("episode_favorites_episode_user_unique").on(t.episodeId, t.userId),
+    index("episode_favorites_user_idx").on(t.userId),
+  ]
+);
+
+/** Per-user episode like; one row per user and episode. */
+export const episodeLikes = pgTable(
+  "episode_likes",
+  {
+    id: serial("id").primaryKey(),
+    episodeId: integer("episode_id")
+      .notNull()
+      .references(() => animeEpisodes.id, { onDelete: "cascade" }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("episode_likes_episode_user_unique").on(t.episodeId, t.userId),
+    index("episode_likes_user_idx").on(t.userId),
+  ]
+);
+
+/** Visitor comments on an episode; author info resolves through users. */
+export const episodeComments = pgTable(
+  "episode_comments",
+  {
+    id: serial("id").primaryKey(),
+    episodeId: integer("episode_id")
+      .notNull()
+      .references(() => animeEpisodes.id, { onDelete: "cascade" }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    content: text("content").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("episode_comments_episode_idx").on(t.episodeId)]
+);
+
 export type User = typeof users.$inferSelect;
 export type TorrentItem = typeof torrentItems.$inferSelect;
 export type Anime = typeof anime.$inferSelect;
 export type AnimeInfo = typeof animeInfos.$inferSelect;
 export type AnimeEpisode = typeof animeEpisodes.$inferSelect;
 export type EpisodeInfo = typeof episodeInfos.$inferSelect;
+export type AnimeFavorite = typeof animeFavorites.$inferSelect;
+export type AnimeLike = typeof animeLikes.$inferSelect;
+export type AnimeComment = typeof animeComments.$inferSelect;
+export type EpisodeFavorite = typeof episodeFavorites.$inferSelect;
+export type EpisodeLike = typeof episodeLikes.$inferSelect;
+export type EpisodeComment = typeof episodeComments.$inferSelect;
 
 /**
  * An anime row with its display name resolved from anime_infos

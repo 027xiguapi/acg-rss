@@ -11,11 +11,14 @@ import { AnimeSidebar } from "@/components/anime/detail/anime-sidebar";
 import { EpisodePicker } from "@/components/anime/detail/episode-picker";
 import { EpisodeSection } from "@/components/anime/detail/episode-section";
 import { RelatedGrid } from "@/components/anime/detail/related-grid";
+import { SocialBar } from "@/components/anime/detail/social-bar";
+import { CommentSection } from "@/components/anime/detail/comment-section";
 import { posterTint } from "@/lib/poster";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { loadEpisode, loadEpisodeDetail } from "@/server/anime/episode";
-import { getAdminUser } from "@/server/auth/session";
+import { loadEpisodeSocial } from "@/server/anime/social";
+import { getAdminUser, getSessionUser } from "@/server/auth/session";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -44,6 +47,8 @@ export default async function EpisodeDetailPage({ params }: PageProps) {
   const { episode, series, seriesDetail } = detail;
 
   const admin = await getAdminUser();
+  const user = await getSessionUser();
+  const social = await loadEpisodeSocial(episodeId, user?.id ?? null);
   const locale = await getLocale();
   const t = await getTranslations("anime");
 
@@ -146,6 +151,16 @@ export default async function EpisodeDetailPage({ params }: PageProps) {
             </p>
           </div>
 
+          <SocialBar
+            kind="episode"
+            targetId={episodeId}
+            favoriteCount={social.favoriteCount}
+            likeCount={social.likeCount}
+            favorited={social.favorited}
+            liked={social.liked}
+            authenticated={user != null}
+          />
+
           {seriesDetail.episodesAsc.length > 0 ? (
             <EpisodePicker episodes={seriesDetail.episodesAsc} activeId={episodeId} />
           ) : null}
@@ -169,6 +184,13 @@ export default async function EpisodeDetailPage({ params }: PageProps) {
               description={t("noTorrentsHint")}
             />
           )}
+
+          <CommentSection
+            kind="episode"
+            targetId={episodeId}
+            comments={social.comments}
+            authenticated={user != null}
+          />
         </div>
 
         <RelatedGrid entries={seriesDetail.related} />

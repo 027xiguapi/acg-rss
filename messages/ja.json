@@ -233,7 +233,18 @@
     "episodeSelect": "エピソード",
     "episodeButton": "第 {episode} 話",
     "releases": "リリース一覧",
-    "related": "関連おすすめ"
+    "related": "関連おすすめ",
+    "favorite": "お気に入り",
+    "favorited": "お気に入り済み",
+    "like": "いいね",
+    "liked": "いいね済み",
+    "comments": "コメント",
+    "commentPlaceholder": "コメントを書く…（最大2000文字）",
+    "sendComment": "コメントする",
+    "commentEmpty": "まだコメントはありません。最初のコメントを書きましょう。",
+    "commentFailed": "コメントの投稿に失敗しました。内容を確認して再試行してください。",
+    "loginToInteract": "ログインしてお気に入り・いいね・コメント",
+    "delete": "削除"
   },
   "admin": {
     "animeTitle": "アニメ管理",

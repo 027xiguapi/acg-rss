@@ -233,7 +233,18 @@
     "episodeSelect": "选集",
     "episodeButton": "第 {episode} 集",
     "releases": "发布版本",
-    "related": "相关推荐"
+    "related": "相关推荐",
+    "favorite": "收藏",
+    "favorited": "已收藏",
+    "like": "点赞",
+    "liked": "已点赞",
+    "comments": "评论",
+    "commentPlaceholder": "写下你的评论…（最多 2000 字）",
+    "sendComment": "发表评论",
+    "commentEmpty": "还没有评论，来抢沙发吧。",
+    "commentFailed": "评论发表失败，请检查内容后重试。",
+    "loginToInteract": "登录后即可收藏、点赞和评论",
+    "delete": "删除"
   },
   "admin": {
     "animeTitle": "动漫管理",

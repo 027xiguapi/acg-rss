@@ -233,7 +233,18 @@
     "episodeSelect": "에피소드",
     "episodeButton": "{episode}화",
     "releases": "릴리스 목록",
-    "related": "관련 추천"
+    "related": "관련 추천",
+    "favorite": "찜",
+    "favorited": "찜 완료",
+    "like": "좋아요",
+    "liked": "좋아요 완료",
+    "comments": "댓글",
+    "commentPlaceholder": "댓글을 입력하세요… (최대 2000자)",
+    "sendComment": "댓글 달기",
+    "commentEmpty": "아직 댓글이 없습니다. 첫 댓글을 남겨보세요.",
+    "commentFailed": "댓글 작성에 실패했습니다. 확인 후 다시 시도하세요.",
+    "loginToInteract": "로그인 후 찜하기·좋아요·댓글을 사용할 수 있습니다",
+    "delete": "삭제"
   },
   "admin": {
     "animeTitle": "애니 관리",

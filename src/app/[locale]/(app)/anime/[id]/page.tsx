@@ -10,8 +10,11 @@ import { DetailActions } from "@/components/anime/detail/detail-actions";
 import { EpisodePicker } from "@/components/anime/detail/episode-picker";
 import { EpisodeSection } from "@/components/anime/detail/episode-section";
 import { RelatedGrid } from "@/components/anime/detail/related-grid";
+import { SocialBar } from "@/components/anime/detail/social-bar";
+import { CommentSection } from "@/components/anime/detail/comment-section";
 import { loadAnime, loadAnimeDetail } from "@/server/anime/detail";
-import { getAdminUser } from "@/server/auth/session";
+import { loadAnimeSocial } from "@/server/anime/social";
+import { getAdminUser, getSessionUser } from "@/server/auth/session";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -40,6 +43,8 @@ export default async function AnimeDetailPage({ params }: PageProps) {
   const { item } = detail;
 
   const admin = await getAdminUser();
+  const user = await getSessionUser();
+  const social = await loadAnimeSocial(animeId, user?.id ?? null);
   const t = await getTranslations("anime");
 
   const hasContent = detail.episodes.length > 0 || detail.unparsed.length > 0;
@@ -98,6 +103,16 @@ export default async function AnimeDetailPage({ params }: PageProps) {
             downloadHref={detail.bestHref}
           />
 
+          <SocialBar
+            kind="anime"
+            targetId={animeId}
+            favoriteCount={social.favoriteCount}
+            likeCount={social.likeCount}
+            favorited={social.favorited}
+            liked={social.liked}
+            authenticated={user != null}
+          />
+
           {detail.episodesAsc.length > 0 ? (
             <EpisodePicker episodes={detail.episodesAsc} />
           ) : null}
@@ -131,6 +146,13 @@ export default async function AnimeDetailPage({ params }: PageProps) {
               description={t("noTorrentsHint")}
             />
           )}
+
+          <CommentSection
+            kind="anime"
+            targetId={animeId}
+            comments={social.comments}
+            authenticated={user != null}
+          />
         </div>
 
         <RelatedGrid entries={detail.related} />

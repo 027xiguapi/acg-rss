@@ -39,12 +39,17 @@ next-intl · PostgreSQL + Drizzle ORM · zod
 
 ## 数据库结构
 
-三层资源层级 + 账号表，共 6 张表（定义见 `src/db/schema.ts`）：
+三层资源层级 + 账号/认证表 + 互动表，共 15 张表（定义见 `src/db/schema.ts`）：
 
 ```
 users ──< anime ──< anime_infos      （多语言名称，参与匹配）
-              └──< anime_episodes ──< torrent_items
-                           └──< episode_contents（多语言剧集简介）
+   │          └──< anime_episodes ──< torrent_items
+   │                       ├──< episode_infos（多语言剧集标题/简介）
+   │                       ├──< episode_favorites / episode_likes / episode_comments
+   │          ├──< anime_favorites（收藏）──< users
+   │          ├──< anime_likes（点赞）──< users
+   │          └──< anime_comments（评论）──< users
+   ├──< accounts / sessions / verification_tokens（Auth.js 认证）
 ```
 
 ### anime — 动画（第 1 层）
@@ -53,8 +58,7 @@ users ──< anime ──< anime_infos      （多语言名称，参与匹配�
 | --- | --- | --- |
 | `id` | serial PK | |
 | `user_id` | int → users（级联删除） | 归属用户 |
-| `title` | varchar(255) | 主显示名（与 anime_infos 中 kind=primary 同步） |
-| `season` | int，默认 1 | 第几季（集号在其内编号） |
+| `season` | int，默认 1 | 第几季（集号在其内编号）。显示名由 anime_infos 中 kind=primary 提供 |
 | `year` | int | 放送年份 |
 | `origin` | varchar(16) | 制作地区：JP / CN / HK / TW / KR / WEST / OTHER |
 | `air_day` | int | 每周放送星期（ISO 星期：1=周一 … 7=周日） |
@@ -86,7 +90,6 @@ users ──< anime ──< anime_infos      （多语言名称，参与匹配�
 | `id` | serial PK | |
 | `anime_id` | int → anime（级联删除） | |
 | `number` | int | 集数（从发布标题解析） |
-| `content` | text | 旧版单语言简介；已被 episode_contents 取代，仅作渲染兜底 |
 | `cover_url` | text | 剧集截图 / 缩略图地址 |
 | `created_at` / `updated_at` | timestamptz | `updated_at` 随 ORM 更新自动刷新 |
 
@@ -94,18 +97,34 @@ users ──< anime ──< anime_infos      （多语言名称，参与匹配�
 作品且解析出集数时自动建行；同一集的不同版本（字幕组 / 分辨率）
 共用一行。集数未识别的种子只挂在作品上，不建集行。
 
-### episode_contents — 多语言剧集简介
+### episode_infos — 多语言剧集标题 / 简介
 
 | 列 | 类型 | 说明 |
 | --- | --- | --- |
 | `id` | serial PK | |
 | `episode_id` | int → anime_episodes（级联删除） | |
 | `lang` | varchar(16) | 语言标签，对应 UI 语言：`en`、`zh-CN`、`ja`、`ko` |
+| `title` | text | 该语言的剧集标题；为空时保留通用「第 N 集」标题 |
 | `content` | text | 该语言下的剧集简介 |
 | `created_at` / `updated_at` | timestamptz | |
 
 唯一约束 `(episode_id, lang)`。剧集页按访客语言选取对应行，
-无匹配时回退到任意一行，再回退到 anime_episodes.content。
+无匹配时回退到任意一行。
+
+### 互动表 — anime_favorites / anime_likes / anime_comments / episode_*
+
+详情页互动功能（需登录），动画与剧集各一套同构表：
+`anime_*` 挂在 anime 上，`episode_favorites` / `episode_likes` /
+`episode_comments` 挂在 anime_episodes 上。
+
+| 列 | 类型 | 说明 |
+| --- | --- | --- |
+| `id` / `anime_id` / `user_id` / `created_at` | — | 公共列；anime 级联删除，users 级联删除 |
+| `content`（仅 anime_comments） | text | 评论正文（1–2000 字） |
+
+`anime_favorites`（收藏）与 `anime_likes`（点赞）各有唯一约束
+`(anime_id, user_id)`，即每人对每部作品各最多一条，再次操作为取消。
+`anime_comments` 按 `(anime_id, created_at desc)` 展示，作者可删除自己的评论。
 
 ### torrent_items — 种子（第 3 层）
 

@@ -233,7 +233,18 @@
     "episodeSelect": "Episodes",
     "episodeButton": "EP {episode}",
     "releases": "Releases",
-    "related": "Related"
+    "related": "Related",
+    "favorite": "Favorite",
+    "favorited": "Favorited",
+    "like": "Like",
+    "liked": "Liked",
+    "comments": "Comments",
+    "commentPlaceholder": "Write a comment… (up to 2000 chars)",
+    "sendComment": "Post comment",
+    "commentEmpty": "No comments yet. Be the first!",
+    "commentFailed": "Failed to post the comment, please check and retry.",
+    "loginToInteract": "Log in to favorite, like and comment",
+    "delete": "Delete"
   },
   "admin": {
     "animeTitle": "Anime Management",
