@@ -1,13 +1,19 @@
 import { eq } from "drizzle-orm";
 import Parser from "rss-parser";
 import { db } from "@/db";
-import { rssFeeds, torrentItems, type RssFeed } from "@/db/schema";
+import {
+  episodeInfos,
+  rssFeeds,
+  torrentItems,
+  type RssFeed,
+} from "@/db/schema";
 import { findOrCreateEpisode } from "@/server/bangumi/linker";
 import { resolveSubgroupId } from "@/server/subgroups/resolve";
 import {
   computeInfoHash,
   extractMagnet,
   extractSubgroup,
+  extractSubtitleInfo,
   parseTorrentTitle,
 } from "@/lib/parser";
 
@@ -131,6 +137,93 @@ export async function fetchFeedMeta(url: string): Promise<{
 }
 
 /**
+ * Derive per-language episode titles from a release title. Mikan titles
+ * often carry the series name in several scripts separated by " / "
+ * (e.g. "无自觉圣女… / 无自覚圣女は… / Mujikaku Seijo …"); each segment is
+ * classified as zh / ja / en and becomes one episode_infos candidate.
+ */
+function episodeTitleCandidates(releaseTitle: string): {
+  lang: string;
+  title: string;
+}[] {
+  const series = parseTorrentTitle(releaseTitle).bangumiTitle;
+  if (!series) return [];
+  const seen = new Set<string>();
+  const out: { lang: string; title: string }[] = [];
+  for (const segment of series.split(/\s*\/\s*/)) {
+    const name = segment.trim();
+    if (name.length < 2 || seen.has(name)) continue;
+    seen.add(name);
+    const hasCJK = /[\u4e00-\u9fff\u3040-\u30ff]/.test(name);
+    const hasKana = /[\u3040-\u30ff]/.test(name);
+    const hasLatin = /[A-Za-z]/.test(name);
+    let lang: string | null = null;
+    if (hasKana) lang = "ja";
+    else if (hasCJK && !hasLatin) lang = "zh-CN";
+    else if (hasLatin && !hasCJK) lang = "en";
+    if (!lang) continue;
+    out.push({ lang, title: name });
+  }
+  return out;
+}
+
+/**
+ * Fill episode_infos with multilingual titles derived from release titles.
+ * Insert-only per language: rows already maintained by an admin are left
+ * untouched, and empty fields never overwrite existing content.
+ */
+async function upsertEpisodeInfos(
+  episodeId: number,
+  releaseTitles: string[]
+): Promise<void> {
+  const existing = await db
+    .select({ lang: episodeInfos.lang })
+    .from(episodeInfos)
+    .where(eq(episodeInfos.episodeId, episodeId));
+  const knownLangs = new Set(existing.map((row) => row.lang));
+
+  for (const releaseTitle of releaseTitles) {
+    for (const { lang, title } of episodeTitleCandidates(releaseTitle)) {
+      if (knownLangs.has(lang)) continue;
+      const inserted = await db
+        .insert(episodeInfos)
+        .values({ episodeId, lang, title, content: null })
+        .onConflictDoNothing({
+          target: [episodeInfos.episodeId, episodeInfos.lang],
+        })
+        .returning({ id: episodeInfos.id });
+      if (inserted[0]) knownLangs.add(lang);
+    }
+  }
+}
+
+/**
+ * Fill episode_infos for an already-ingested torrent: resolve its episode
+ * row (creating it when the episode number is known) and upsert infos.
+ */
+async function upsertEpisodeInfosForTorrent(
+  bangumiId: number,
+  torrentId: number,
+  episodeNumber: number | null,
+  releaseTitle: string
+): Promise<void> {
+  if (episodeNumber == null) return;
+  const episodeId = await findOrCreateEpisode(bangumiId, episodeNumber);
+  await db
+    .update(torrentItems)
+    .set({ episodeId })
+    .where(eq(torrentItems.id, torrentId));
+  try {
+    await upsertEpisodeInfos(episodeId, [releaseTitle]);
+  } catch (err) {
+    console.error(
+      `[rss] episode_infos failed for ep ${episodeNumber}:`,
+      err
+    );
+  }
+}
+
+/**
  * Ingest already-parsed items into one bangumi: insert torrents (dedup by
  * info-hash) and link them to the bangumi/episode. Shared by the URL fetch
  * path and the pasted-XML batch importer.
@@ -146,6 +239,7 @@ export async function ingestItems(
     const parsed = parseTorrentTitle(item.title);
     const subgroup = extractSubgroup(item.title);
     const subgroupId = await resolveSubgroupId(subgroup);
+    const subtitleInfo = extractSubtitleInfo(item.title);
 
     const inserted = await db
       .insert(torrentItems)
@@ -164,26 +258,53 @@ export async function ingestItems(
         resolution: parsed.resolution,
         subgroup,
         subgroupId,
+        subtitleLanguages: subtitleInfo.languages.length
+          ? subtitleInfo.languages
+          : null,
+        subtitleFormat: subtitleInfo.format,
       })
       .onConflictDoNothing({ target: torrentItems.infoHash })
       .returning();
 
     const row = inserted[0];
-    if (!row) {
+    if (row) result.created += 1;
+    else {
+      // Already ingested before — refresh its link to this bangumi and
+      // still try to fill the episode's multilingual infos below.
+      const [existing] = await db
+        .update(torrentItems)
+        .set({ bangumiId })
+        .where(eq(torrentItems.infoHash, infoHash))
+        .returning({ id: torrentItems.id, episode: torrentItems.episode });
+      if (!existing) continue;
+      if (result.skipped === 0 && !existing.episode) continue;
+      await upsertEpisodeInfosForTorrent(
+        bangumiId,
+        existing.id,
+        existing.episode,
+        item.title
+      );
       result.skipped += 1;
       continue;
     }
 
-    const episodeId =
-      row.episode != null
-        ? await findOrCreateEpisode(bangumiId, row.episode)
-        : null;
-    await db
-      .update(torrentItems)
-      .set({ bangumiId, episodeId })
-      .where(eq(torrentItems.id, row.id));
-
-    result.created += 1;
+    if (row.episode != null) {
+      const episodeId = await findOrCreateEpisode(bangumiId, row.episode);
+      await db
+        .update(torrentItems)
+        .set({ bangumiId, episodeId })
+        .where(eq(torrentItems.id, row.id));
+      try {
+        await upsertEpisodeInfos(episodeId, [item.title]);
+      } catch (err) {
+        console.error(`[rss] episode_infos failed for ep ${row.episode}:`, err);
+      }
+    } else {
+      await db
+        .update(torrentItems)
+        .set({ bangumiId })
+        .where(eq(torrentItems.id, row.id));
+    }
   }
 
   return result;

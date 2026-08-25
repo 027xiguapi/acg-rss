@@ -105,6 +105,80 @@ export function extractSubgroup(title: string): string | undefined {
   return name;
 }
 
+/** Subtitle languages parsed from the title. */
+export interface SubtitleInfo {
+  /** Normalized language tags, e.g. ["zh-Hans", "zh-Hant", "ja"] */
+  languages: string[];
+  /** Subtitle delivery format: embedded (硬字幕) or closed (内封/外挂) */
+  format: "embedded" | "closed" | null;
+  /** Raw tag as written in the title, e.g. "简繁内封" */
+  raw: string | null;
+}
+
+/** One language marker: regex over a bracket/delimited tag → canonical tags. */
+const LANGUAGE_MARKERS: { re: RegExp; langs: string[] }[] = [
+  // Multi-language combos first (longer, more specific)
+  { re: /^简繁日(?:内[封嵌])?字幕?$/i, langs: ["zh-Hans", "zh-Hant", "ja"] },
+  { re: /^(?:简|繁)日双语$/i, langs: ["zh-Hans", "zh-Hant", "ja"] },
+  { re: /^简繁(?:内[封嵌]|双?语|字幕)?$/i, langs: ["zh-Hans", "zh-Hant"] },
+  { re: /^(?:中英|中日)(?:双语)?$/i, langs: ["zh-Hans"] },
+  { re: /^GB(?:内嵌)?$/i, langs: ["zh-Hans"] },
+  { re: /^BIG5$/i, langs: ["zh-Hant"] },
+  // Single-language
+  { re: /^简[体中]?$/, langs: ["zh-Hans"] },
+  { re: /^繁[体中]?$/, langs: ["zh-Hant"] },
+  { re: /^CHS$/i, langs: ["zh-Hans"] },
+  { re: /^CHT$/i, langs: ["zh-Hant"] },
+  // Raw Japanese audio, no subtitles
+  { re: /^(?:日语|日文|生肉)$/, langs: [] },
+];
+
+/** Subtitle delivery format markers found inside the same tag. */
+const FORMAT_MARKERS: { re: RegExp; format: "embedded" | "closed" }[] = [
+  { re: /内封|外挂|外置/, format: "closed" },
+  { re: /内嵌|内挂|硬字幕/, format: "embedded" },
+];
+
+/**
+ * Parse subtitle language/format info from a release title by scanning the
+ * bracketed tags (and trailing free-text segments), e.g.
+ * "[Nix-Raws] … [简繁内封]" → zh-Hans + zh-Hant, closed captions,
+ * "[黒ネズミたち] … (CR 1920x1080 AVC AAC MKV)" → no subtitle info.
+ */
+export function extractSubtitleInfo(title: string): SubtitleInfo {
+  const segments: string[] = [];
+  for (const m of title.matchAll(/[\[【]([^\]】]{1,40})[\]】]/g)) {
+    segments.push(m[1]);
+  }
+  // Also scan the text after the last bracket (some groups append there)
+  const tail = title.replace(/[\[【][^\]】]*[\]】]/g, " ").trim();
+  if (tail) segments.push(tail);
+
+  const languages = new Set<string>();
+  let matchedRaw: string | null = null;
+
+  for (const segment of segments) {
+    for (const { re, langs } of LANGUAGE_MARKERS) {
+      if (!re.test(segment.trim())) continue;
+      for (const lang of langs) languages.add(lang);
+      if (!matchedRaw) matchedRaw = segment.trim();
+      break;
+    }
+  }
+
+  let format: SubtitleInfo["format"] = null;
+  outer: for (const segment of segments) {
+    for (const { re, format: f } of FORMAT_MARKERS) {
+      if (re.test(segment)) {
+        format = f;
+        break outer;
+      }
+    }
+  }
+
+  return { languages: [...languages], format, raw: matchedRaw };
+}
+
 const BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 
 /** Decode a base32 string (used by some magnet links) into a hex string. */

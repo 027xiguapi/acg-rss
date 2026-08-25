@@ -7,7 +7,12 @@ import { db } from "@/db";
 import { bangumiEpisodes, torrentItems } from "@/db/schema";
 import { getAdminUser } from "@/server/auth/session";
 import { linkTorrent } from "@/server/bangumi/linker";
-import { computeInfoHash, extractSubgroup, parseTorrentTitle } from "@/lib/parser";
+import {
+  computeInfoHash,
+  extractSubgroup,
+  extractSubtitleInfo,
+  parseTorrentTitle,
+} from "@/lib/parser";
 import { resolveSubgroupId } from "@/server/subgroups/resolve";
 
 export interface TorrentFormState {
@@ -70,6 +75,7 @@ export async function createTorrentAction(
   const parsedTitle = parseTorrentTitle(data.title);
   const subgroup = extractSubgroup(data.title);
   const subgroupId = await resolveSubgroupId(subgroup);
+  const subtitleInfo = extractSubtitleInfo(data.title);
   const inserted = await db
     .insert(torrentItems)
     .values({
@@ -85,6 +91,8 @@ export async function createTorrentAction(
       resolution: parsedTitle.resolution,
       subgroup,
       subgroupId,
+      subtitleLanguages: subtitleInfo.languages.length ? subtitleInfo.languages : null,
+      subtitleFormat: subtitleInfo.format,
     })
     .onConflictDoNothing({ target: torrentItems.infoHash })
     .returning();
@@ -143,6 +151,7 @@ export async function updateTorrentAction(
   const parsedTitle = parseTorrentTitle(data.title);
   const subgroup = extractSubgroup(data.title);
   const subgroupId = await resolveSubgroupId(subgroup);
+  const subtitleInfo = extractSubtitleInfo(data.title);
   const updated = await db
     .update(torrentItems)
     .set({
@@ -158,6 +167,8 @@ export async function updateTorrentAction(
       resolution: parsedTitle.resolution,
       subgroup,
       subgroupId,
+      subtitleLanguages: subtitleInfo.languages.length ? subtitleInfo.languages : null,
+      subtitleFormat: subtitleInfo.format,
       // Links are re-resolved from the new title below
       bangumiId: null,
       episodeId: null,

@@ -244,6 +244,10 @@ export const torrentItems = pgTable(
     resolution: varchar("resolution", { length: 16 }),
     /** Fansub/release group parsed from the leading bracket tag */
     subgroup: varchar("subgroup", { length: 128 }),
+    /** Subtitle languages parsed from the title, e.g. ["zh-Hans","ja"] */
+    subtitleLanguages: text("subtitle_languages").array(),
+    /** Subtitle delivery format parsed from the title: embedded | closed */
+    subtitleFormat: varchar("subtitle_format", { length: 16 }),
     /** Optional link to a managed subgroup row (name + category) */
     subgroupId: integer("subgroup_id").references(() => subgroups.id, {
       onDelete: "set null",
