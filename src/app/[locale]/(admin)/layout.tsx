@@ -1,8 +1,9 @@
 import { getLocale } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
 import { getAdminUser } from "@/server/auth/session";
+import { AdminShell } from "@/components/admin/admin-shell";
 
-/** Admin guard shared by all management pages under /admin. */
+/** Admin guard + shared chrome for all management pages under /admin. */
 export default async function AdminLayout({
   children,
 }: {
@@ -15,5 +16,9 @@ export default async function AdminLayout({
     return null;
   }
 
-  return <>{children}</>;
+  return (
+    <AdminShell username={user.name ?? user.username ?? "?"}>
+      {children}
+    </AdminShell>
+  );
 }

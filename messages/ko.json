@@ -64,7 +64,8 @@
     "torrents": "토렌트",
     "login": "로그인",
     "register": "회원가입",
-    "logout": "로그아웃"
+    "logout": "로그아웃",
+    "backToSite": "사이트로"
   },
   "landing": {
     "hero": "방구미 → 화수 → 토렌트, 깔끔하게 정리.",
@@ -300,7 +301,25 @@
     "subgroupCategoryPlaceholder": "간체 / 번체 / 이중언어 …",
     "subgroupDuplicate": "이 그룹 이름은 이미 존재합니다.",
     "subgroupDeleteConfirm": "이 그룹을 삭제할까요? 연결된 토렌트의 그룹명은 유지됩니다.",
-    "subgroupTorrents": "토렌트 수"
+    "subgroupTorrents": "토렌트 수",
+    "panel": "관리",
+    "nav": {
+      "bangumi": "番组 관리",
+      "contents": "다국어 콘텐츠",
+      "feeds": "RSS 피드",
+      "subgroups": "자막 그룹"
+    },
+    "importXml": "XML 가져오기",
+    "importXmlTitle": "RSS XML 일괄 가져오기",
+    "importXmlDescription": "Mikan 등의 RSS XML을 붙여넣으면 방송·회차·토렌트를 자동으로 파싱해 저장합니다(info-hash 중복 제거, 재실행 가능). 채널 링크가 피드 URL이면 구독도 생성합니다.",
+    "importXmlLabel": "RSS XML 내용",
+    "importXmlSubmit": "가져오기",
+    "importXmlPlaceholder": "<?xml version=\"1.0\"?> <rss …> … </rss>",
+    "importXmlSuccess": "\"{series}\" 가져오기 완료: 신규 {created}건, 중복 건너뜀 {skipped}건.",
+    "importXmlSubscribed": "채널 링크로 구독을 생성했습니다.",
+    "importXmlError_noItems": "항목을 파싱하지 못했습니다. RSS XML 전체가 붙어 있는지 확인하세요.",
+    "importXmlError_noSeries": "채널 정보에서 제목을 확인할 수 없습니다.",
+    "importXmlError_parse": "파싱 실패: XML이 잘못되었거나 불완전합니다."
   },
   "validation": {
     "required": "이 필드는 필수입니다.",

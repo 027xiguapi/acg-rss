@@ -21,6 +21,7 @@ import {
   type BangumiOption,
 } from "@/components/rss/rss-feed-form-dialog";
 import { RssFeedRowActions } from "@/components/rss/rss-feed-row-actions";
+import { RssXmlImportDialog } from "@/components/rss/rss-xml-import-dialog";
 import { FetchAllFeedsButton } from "@/components/rss/fetch-all-feeds-button";
 
 export const metadata: Metadata = { title: "RSS Feeds" };
@@ -57,6 +58,7 @@ export default async function AdminFeedsPage() {
         </div>
         <div className="flex items-center gap-2">
           <FetchAllFeedsButton />
+          <RssXmlImportDialog />
           <RssFeedFormDialog bangumiOptions={bangumiOptions} />
         </div>
       </div>

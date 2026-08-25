@@ -64,7 +64,8 @@
     "torrents": "Torrent",
     "login": "サインイン",
     "register": "登録",
-    "logout": "サインアウト"
+    "logout": "サインアウト",
+    "backToSite": "サイトへ"
   },
   "landing": {
     "hero": "番組 → 話 → Torrent、すっきり整理。",
@@ -300,7 +301,25 @@
     "subgroupCategoryPlaceholder": "簡体 / 繁体 / 二言語 …",
     "subgroupDuplicate": "このグループ名はすでに存在します。",
     "subgroupDeleteConfirm": "このグループを削除しますか？紐付けられた torrent のグループ名は保持されます。",
-    "subgroupTorrents": "torrent 数"
+    "subgroupTorrents": "torrent 数",
+    "panel": "管理",
+    "nav": {
+      "bangumi": "番組管理",
+      "contents": "多言語コンテンツ",
+      "feeds": "RSSフィード",
+      "subgroups": "字幕グループ"
+    },
+    "importXml": "XML 取り込み",
+    "importXmlTitle": "RSS XML 一括取り込み",
+    "importXmlDescription": "Mikan などの RSS XML を貼り付けると、番組・エピソード・トレントを自動解析して取り込みます（info-hash で重複排除、再実行可）。チャンネルのリンクがフィード URL なら購読も作成します。",
+    "importXmlLabel": "RSS XML 本文",
+    "importXmlSubmit": "取り込む",
+    "importXmlPlaceholder": "<?xml version=\"1.0\"?> <rss …> … </rss>",
+    "importXmlSuccess": "「{series}」を取り込みました：新規 {created} 件、重複スキップ {skipped} 件。",
+    "importXmlSubscribed": "チャンネルリンクから購読を作成しました。",
+    "importXmlError_noItems": "アイテムが解析できませんでした。RSS XML 全体が貼り付けられているか確認してください。",
+    "importXmlError_noSeries": "チャンネル情報からタイトルを特定できませんでした。",
+    "importXmlError_parse": "解析に失敗しました：XML が不正または不完全です。"
   },
   "validation": {
     "required": "この項目は必須です。",

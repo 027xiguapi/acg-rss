@@ -64,7 +64,8 @@
     "torrents": "资源",
     "login": "登录",
     "register": "注册",
-    "logout": "退出登录"
+    "logout": "退出登录",
+    "backToSite": "前台"
   },
   "landing": {
     "hero": "番组 → 集 → 种子，一层不少。",
@@ -300,7 +301,25 @@
     "subgroupCategoryPlaceholder": "简中 / 繁中 / 双语 …",
     "subgroupDuplicate": "该字幕组名称已存在。",
     "subgroupDeleteConfirm": "删除该字幕组？已绑定的种子仍会保留其字幕组文本。",
-    "subgroupTorrents": "种子数"
+    "subgroupTorrents": "种子数",
+    "panel": "管理后台",
+    "nav": {
+      "bangumi": "番组管理",
+      "contents": "多语言内容",
+      "feeds": "RSS 订阅",
+      "subgroups": "字幕组"
+    },
+    "importXml": "XML 导入",
+    "importXmlTitle": "批量导入 RSS XML",
+    "importXmlDescription": "粘贴 Mikan 等站点的 RSS XML 文本，自动解析出番剧、分集与种子（按 info-hash 去重，可重复执行）。若频道链接是订阅地址会同时创建订阅。",
+    "importXmlLabel": "RSS XML 内容",
+    "importXmlSubmit": "开始导入",
+    "importXmlPlaceholder": "<?xml version=\"1.0\"?> <rss …> … </rss>",
+    "importXmlSuccess": "已导入「{series}」：新增 {created} 条种子，跳过 {skipped} 条重复。",
+    "importXmlSubscribed": "已根据频道链接创建订阅。",
+    "importXmlError_noItems": "未解析到任何条目，请确认粘贴的是完整的 RSS XML。",
+    "importXmlError_noSeries": "无法从频道标题确定番剧名，请检查 XML 内容。",
+    "importXmlError_parse": "解析失败：XML 格式有误或网络内容不完整。"
   },
   "validation": {
     "required": "此项为必填。",

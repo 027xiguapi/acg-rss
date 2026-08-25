@@ -18,6 +18,14 @@ export interface FeedFetchResult {
   error?: string;
 }
 
+function newParser(): Parser {
+  return new Parser({
+    customFields: {
+      item: [["torrent", "pubDate", { keepArray: false }]],
+    },
+  });
+}
+
 /** One normalized item from a parsed RSS feed. */
 interface NormalizedItem {
   title: string;
@@ -30,24 +38,34 @@ interface NormalizedItem {
 }
 
 /** Channel metadata needed to auto-create a bangumi before ingestion. */
-interface ParsedFeed {
+export interface ParsedFeed {
+  /** Channel title, e.g. "Mikan Project - <series>" on Mikan feeds */
   title: string | null;
+  /** Channel home link; for Mikan bangumi feeds this is a series page */
+  link: string | null;
   items: NormalizedItem[];
 }
 
 /**
- * Parse a feed URL into torrent-shaped records. Mikan puts the .torrent
- * link in `<enclosure>` and may expose a magnet in several places, so we
- * scan the common fields and let the torrent URL fall back to the enclosure.
+ * Parse pasted/raw feed XML text into torrent-shaped records. Mikan puts
+ * the .torrent link in `<enclosure>` and may expose a magnet in several
+ * places, so we scan the common fields and let the torrent URL fall back
+ * to the enclosure.
  */
-async function parseFeed(url: string): Promise<ParsedFeed> {
-  const parser = new Parser({
-    customFields: {
-      item: [["torrent", "pubDate", { keepArray: false }]],
-    },
-  });
-  const feed = await parser.parseURL(url);
+export async function parseFeedXml(xml: string): Promise<ParsedFeed> {
+  const parser = newParser();
+  return normalizeParsedFeed(await parser.parseString(xml));
+}
 
+async function parseFeed(url: string): Promise<ParsedFeed> {
+  const parser = newParser();
+  const feed = await parser.parseURL(url);
+  return normalizeParsedFeed(feed);
+}
+
+async function normalizeParsedFeed(
+  feed: Awaited<ReturnType<Parser["parseString"]>>
+): Promise<ParsedFeed> {
   const items: NormalizedItem[] = [];
   for (const item of feed.items) {
     if (!item.title) continue;
@@ -94,7 +112,7 @@ async function parseFeed(url: string): Promise<ParsedFeed> {
       category: item.categories?.[0] ?? null,
     });
   }
-  return { title: feed.title ?? null, items };
+  return { title: feed.title ?? null, link: feed.link ?? null, items };
 }
 
 /**
@@ -113,6 +131,65 @@ export async function fetchFeedMeta(url: string): Promise<{
 }
 
 /**
+ * Ingest already-parsed items into one bangumi: insert torrents (dedup by
+ * info-hash) and link them to the bangumi/episode. Shared by the URL fetch
+ * path and the pasted-XML batch importer.
+ */
+export async function ingestItems(
+  bangumiId: number,
+  items: NormalizedItem[]
+): Promise<FeedFetchResult> {
+  const result: FeedFetchResult = { created: 0, skipped: 0 };
+
+  for (const item of items) {
+    const infoHash = computeInfoHash(item.magnet, item.torrentUrl);
+    const parsed = parseTorrentTitle(item.title);
+    const subgroup = extractSubgroup(item.title);
+    const subgroupId = await resolveSubgroupId(subgroup);
+
+    const inserted = await db
+      .insert(torrentItems)
+      .values({
+        title: item.title,
+        description: item.description,
+        magnet: item.magnet,
+        torrentUrl: item.torrentUrl,
+        infoHash,
+        size: item.size,
+        publishTime: item.publishTime,
+        category: item.category,
+        bangumiTitle: parsed.bangumiTitle,
+        season: parsed.season,
+        episode: parsed.episode,
+        resolution: parsed.resolution,
+        subgroup,
+        subgroupId,
+      })
+      .onConflictDoNothing({ target: torrentItems.infoHash })
+      .returning();
+
+    const row = inserted[0];
+    if (!row) {
+      result.skipped += 1;
+      continue;
+    }
+
+    const episodeId =
+      row.episode != null
+        ? await findOrCreateEpisode(bangumiId, row.episode)
+        : null;
+    await db
+      .update(torrentItems)
+      .set({ bangumiId, episodeId })
+      .where(eq(torrentItems.id, row.id));
+
+    result.created += 1;
+  }
+
+  return result;
+}
+
+/**
  * Fetch one feed, ingest new torrents and link them straight to the feed's
  * bangumi (a Mikan bangumi feed is scoped to a single series). Duplicate
  * info-hashes are skipped via the unique index.
@@ -122,51 +199,9 @@ export async function ingestFeed(feed: RssFeed): Promise<FeedFetchResult> {
 
   try {
     const { items } = await parseFeed(feed.url);
-
-    for (const item of items) {
-      const infoHash = computeInfoHash(item.magnet, item.torrentUrl);
-      const parsed = parseTorrentTitle(item.title);
-      const subgroup = extractSubgroup(item.title);
-      const subgroupId = await resolveSubgroupId(subgroup);
-
-      const inserted = await db
-        .insert(torrentItems)
-        .values({
-          title: item.title,
-          description: item.description,
-          magnet: item.magnet,
-          torrentUrl: item.torrentUrl,
-          infoHash,
-          size: item.size,
-          publishTime: item.publishTime,
-          category: item.category,
-          bangumiTitle: parsed.bangumiTitle,
-          season: parsed.season,
-          episode: parsed.episode,
-          resolution: parsed.resolution,
-          subgroup,
-          subgroupId,
-        })
-        .onConflictDoNothing({ target: torrentItems.infoHash })
-        .returning();
-
-      const row = inserted[0];
-      if (!row) {
-        result.skipped += 1;
-        continue;
-      }
-
-      const episodeId =
-        row.episode != null
-          ? await findOrCreateEpisode(feed.bangumiId, row.episode)
-          : null;
-      await db
-        .update(torrentItems)
-        .set({ bangumiId: feed.bangumiId, episodeId })
-        .where(eq(torrentItems.id, row.id));
-
-      result.created += 1;
-    }
+    const ingested = await ingestItems(feed.bangumiId, items);
+    result.created = ingested.created;
+    result.skipped = ingested.skipped;
 
     await db
       .update(rssFeeds)

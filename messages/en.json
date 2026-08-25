@@ -64,7 +64,8 @@
     "torrents": "Torrents",
     "login": "Sign in",
     "register": "Sign up",
-    "logout": "Sign out"
+    "logout": "Sign out",
+    "backToSite": "Site"
   },
   "landing": {
     "hero": "Bangumi → episode → torrent, neatly organized.",
@@ -300,7 +301,25 @@
     "subgroupCategoryPlaceholder": "简中 / 繁中 / 双语 …",
     "subgroupDuplicate": "This subgroup name already exists.",
     "subgroupDeleteConfirm": "Delete this subgroup? Bound torrents keep their subgroup text.",
-    "subgroupTorrents": "Torrents"
+    "subgroupTorrents": "Torrents",
+    "panel": "Admin",
+    "nav": {
+      "bangumi": "Bangumi",
+      "contents": "Contents",
+      "feeds": "RSS Feeds",
+      "subgroups": "Subgroups"
+    },
+    "importXml": "Import XML",
+    "importXmlTitle": "Batch-import RSS XML",
+    "importXmlDescription": "Paste an RSS/XML document (e.g. from Mikan) and it will be parsed into a bangumi, episodes and torrents (deduplicated by info-hash, safe to re-run). A subscription is created when the channel link is a feed URL.",
+    "importXmlLabel": "RSS XML content",
+    "importXmlSubmit": "Import",
+    "importXmlPlaceholder": "<?xml version=\"1.0\"?> <rss …> … </rss>",
+    "importXmlSuccess": "Imported \"{series}\": {created} torrent(s) created, {skipped} duplicate(s) skipped.",
+    "importXmlSubscribed": "Subscription created from the channel link.",
+    "importXmlError_noItems": "No items were parsed — make sure the whole RSS XML was pasted.",
+    "importXmlError_noSeries": "Could not determine the series title from the channel metadata.",
+    "importXmlError_parse": "Parse failed: the XML is malformed or incomplete."
   },
   "validation": {
     "required": "This field is required.",

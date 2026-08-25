@@ -1,97 +1,21 @@
 import "dotenv/config";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import {
-  bangumi,
-  bangumiInfos,
   rssFeeds,
-  users,
   type RssFeed,
-  type User,
 } from "@/db/schema";
 import { fetchFeedMeta, ingestFeed } from "@/server/rss/fetch";
+import {
+  cleanSeriesTitle,
+  createBangumi,
+  findBangumiIdByTitle,
+  findImportOwner,
+} from "@/server/rss/import";
 import { parseTorrentTitle } from "@/lib/parser";
 
 /** Default Mikan feed when none is passed on the command line. */
 const DEFAULT_URL = "https://mikanani.me/RSS/Bangumi?bangumiId=3941";
-
-/**
- * Strip leading decorative tags (【…】, […], （…）, (…)) and the Mikan
- * channel-title prefix ("Mikan Project - ", "蜜柑计划 - ") from a channel
- * title, leaving just the series name.
- */
-function cleanSeriesTitle(raw: string | null | undefined): string | null {
-  if (!raw) return null;
-  let text = raw.trim();
-  for (;;) {
-    const next = text
-      .replace(/^【[^】]*】\s*/, "")
-      .replace(/^\[[^\]]*\]\s*/, "")
-      .replace(/^（[^）]*）\s*/, "")
-      .replace(/^\([^)]*\)\s*/, "")
-      .replace(/^(?:Mikan Project|Mikan|蜜柑计划|蜜柑)\s*[-–—:：|]\s*/i, "");
-    if (next === text) break;
-    text = next.trim();
-  }
-  return text.trim() || null;
-}
-
-/** Pick the admin user to own the imported bangumi (falls back gracefully). */
-async function findAdminUser(): Promise<User> {
-  const [admin] = await db
-    .select()
-    .from(users)
-    .where(eq(users.role, "admin"))
-    .limit(1);
-  if (admin) return admin;
-  const [demo] = await db
-    .select()
-    .from(users)
-    .where(eq(users.username, "demo"))
-    .limit(1);
-  if (demo) return demo;
-  const [any] = await db.select().from(users).limit(1);
-  if (any) return any;
-  throw new Error("No users in the database — run `pnpm db:seed` first.");
-}
-
-/** Resolve a tracked bangumi by its primary name, if it already exists. */
-async function findBangumiIdByTitle(title: string): Promise<number | null> {
-  const [row] = await db
-    .select({ id: bangumi.id })
-    .from(bangumi)
-    .innerJoin(bangumiInfos, eq(bangumiInfos.bangumiId, bangumi.id))
-    .where(and(eq(bangumiInfos.kind, "primary"), eq(bangumiInfos.title, title)))
-    .limit(1);
-  return row?.id ?? null;
-}
-
-/** Create a bangumi with its primary name. */
-async function createBangumi(
-  owner: User,
-  title: string,
-  season: number
-): Promise<number> {
-  const [row] = await db
-    .insert(bangumi)
-    .values({
-      userId: owner.id,
-      season,
-      origin: "JP",
-      watchStatus: "WATCHING",
-      updatedBy: owner.id,
-    })
-    .returning();
-
-  await db.insert(bangumiInfos).values({
-    bangumiId: row.id,
-    kind: "primary",
-    lang: null,
-    title,
-  });
-
-  return row.id;
-}
 
 /**
  * Batch-import a Mikan bangumi RSS feed: create (or reuse) the tracked
@@ -122,7 +46,7 @@ async function main(): Promise<void> {
     );
   }
 
-  const owner = await findAdminUser();
+  const owner = await findImportOwner();
   const season = parseTorrentTitle(firstItemTitle ?? "").season ?? 1;
 
   console.log(
