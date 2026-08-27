@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useActionState } from "react";
 import { useTranslations } from "next-intl";
-import { Loader2, Pencil, Plus } from "lucide-react";
+import { ImagePlus, Loader2, Pencil, Plus } from "lucide-react";
 import {
   saveBangumiAction,
   type BangumiFormState,
@@ -65,6 +65,39 @@ export function BangumiFormDialog({
   const tCommon = useTranslations("common");
   const toast = useToast();
   const [open, setOpen] = React.useState(false);
+  const [coverUrl, setCoverUrl] = React.useState(bangumi?.coverUrl ?? "");
+  const [uploading, setUploading] = React.useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  /** Upload the picked image to Cloudflare R2 and write the URL into the form. */
+  async function handleUpload(file: File) {
+    if (!file.type.startsWith("image/")) {
+      toast(t("uploadInvalidType"), "error");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast(t("uploadTooLarge"), "error");
+      return;
+    }
+    setUploading(true);
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body });
+      const data = (await res.json()) as { url?: string; error?: string };
+      if (!res.ok || !data.url) {
+        toast(t(data.error === "tooLarge" ? "uploadTooLarge" : "uploadFailed"), "error");
+        return;
+      }
+      setCoverUrl(data.url);
+      toast(t("uploaded"), "success");
+    } catch {
+      toast(t("uploadFailed"), "error");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
 
   async function actionWithSideEffects(
     prev: BangumiFormState,
@@ -144,13 +177,37 @@ export function BangumiFormDialog({
 
             <div className="flex flex-col gap-2">
               <Label htmlFor="bangumi-cover">{t("coverUrl")}</Label>
-              <Input
-                id="bangumi-cover"
-                name="coverUrl"
-                type="url"
-                maxLength={2048}
-                defaultValue={bangumi?.coverUrl ?? ""}
-                placeholder={t("coverUrlPlaceholder")}
+              <div className="flex gap-2">
+                <Input
+                  id="bangumi-cover"
+                  name="coverUrl"
+                  type="url"
+                  maxLength={2048}
+                  value={coverUrl}
+                  onChange={(e) => setCoverUrl(e.target.value)}
+                  placeholder={t("coverUrlPlaceholder")}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  aria-label={t("uploadCover")}
+                  title={t("uploadCover")}
+                >
+                  {uploading ? <Loader2 className="animate-spin" /> : <ImagePlus />}
+                  {t("upload")}
+                </Button>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) void handleUpload(file);
+                }}
               />
               <p className="text-xs text-muted-foreground">{t("coverUrlHint")}</p>
             </div>
