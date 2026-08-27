@@ -11,6 +11,11 @@ const nextConfig: NextConfig = {
       { protocol: "http", hostname: "**" },
     ],
   },
+  experimental: {
+    serverActions: {
+      allowedOrigins: ["acg.routerpark.com", "localhost:3000"],
+    },
+  },
 };
 
 export default withNextIntl(nextConfig);
