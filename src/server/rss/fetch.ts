@@ -63,7 +63,8 @@ export async function parseFeedXml(xml: string): Promise<ParsedFeed> {
   return normalizeParsedFeed(await parser.parseString(xml));
 }
 
-async function parseFeed(url: string): Promise<ParsedFeed> {
+/** Fetch and parse a remote feed URL into torrent-shaped records. */
+export async function parseFeed(url: string): Promise<ParsedFeed> {
   const parser = newParser();
   const feed = await parser.parseURL(url);
   return normalizeParsedFeed(feed);
