@@ -307,7 +307,8 @@
       "bangumi": "番组管理",
       "contents": "多语言内容",
       "feeds": "RSS 订阅",
-      "subgroups": "字幕组"
+      "subgroups": "字幕组",
+      "users": "用户管理"
     },
     "importXml": "XML 导入",
     "importXmlTitle": "批量导入 RSS XML",
@@ -319,7 +320,36 @@
     "importXmlSubscribed": "已根据频道链接创建订阅。",
     "importXmlError_noItems": "未解析到任何条目，请确认粘贴的是完整的 RSS XML。",
     "importXmlError_noSeries": "无法从频道标题确定番剧名，请检查 XML 内容。",
-    "importXmlError_parse": "解析失败：XML 格式有误或网络内容不完整。"
+    "importXmlError_parse": "解析失败：XML 格式有误或网络内容不完整。",
+    "users": {
+      "title": "用户管理",
+      "subtitle": "站点账号、角色与登录方式。",
+      "addUser": "新建用户",
+      "editUser": "编辑用户",
+      "formDescription": "管理账号资料、权限与密码；OAuth 账号可以不设本地密码。",
+      "username": "用户名",
+      "displayName": "显示名",
+      "email": "邮箱",
+      "role": "角色",
+      "roleUser": "普通用户",
+      "roleAdmin": "管理员",
+      "password": "初始密码（至少 8 位）",
+      "resetPassword": "重置密码",
+      "passwordKeepHint": "留空表示不修改密码",
+      "oauthProviders": "第三方登录",
+      "bangumiCount": "番剧数",
+      "you": "我",
+      "empty": "还没有任何用户。",
+      "deleteConfirm": "删除该用户将同时删除其番剧、收藏、评论等数据，且不可恢复。确定？",
+      "hints": "保护规则：不能删除或降级自己，也不能操作最后一位管理员。删除用户会级联删除其创建的番剧、绑定与评论等数据。",
+      "error_usernameFormat": "用户名只能包含字母、数字、下划线，长度 3–64。",
+      "error_usernameTaken": "用户名已被占用。",
+      "error_emailTaken": "邮箱已被占用。",
+      "error_weakPassword": "密码至少 8 位。",
+      "error_selfRole": "不能修改自己的角色。",
+      "error_lastAdmin": "不能降级最后一位管理员。",
+      "error_notFound": "用户不存在。"
+    }
   },
   "validation": {
     "required": "此项为必填。",

@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     serverActions: {
-      allowedOrigins: ["acg.routerpark.com", "localhost:3000"],
+      allowedOrigins: ["acg.routerpark.com", "localhost:3002"],
     },
   },
 };

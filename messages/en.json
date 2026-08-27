@@ -307,7 +307,8 @@
       "bangumi": "Bangumi",
       "contents": "Contents",
       "feeds": "RSS Feeds",
-      "subgroups": "Subgroups"
+      "subgroups": "Subgroups",
+      "users": "Users"
     },
     "importXml": "Import XML",
     "importXmlTitle": "Batch-import RSS XML",
@@ -319,7 +320,36 @@
     "importXmlSubscribed": "Subscription created from the channel link.",
     "importXmlError_noItems": "No items were parsed — make sure the whole RSS XML was pasted.",
     "importXmlError_noSeries": "Could not determine the series title from the channel metadata.",
-    "importXmlError_parse": "Parse failed: the XML is malformed or incomplete."
+    "importXmlError_parse": "Parse failed: the XML is malformed or incomplete.",
+    "users": {
+      "title": "User Management",
+      "subtitle": "Accounts, roles and login methods.",
+      "addUser": "New user",
+      "editUser": "Edit user",
+      "formDescription": "Manage profile, permissions and password; OAuth accounts may have no local password.",
+      "username": "Username",
+      "displayName": "Display name",
+      "email": "Email",
+      "role": "Role",
+      "roleUser": "User",
+      "roleAdmin": "Admin",
+      "password": "Initial password (min 8 chars)",
+      "resetPassword": "Reset password",
+      "passwordKeepHint": "Leave blank to keep the current password",
+      "oauthProviders": "OAuth providers",
+      "bangumiCount": "Bangumi",
+      "you": "you",
+      "empty": "No users yet.",
+      "deleteConfirm": "Deleting this user also removes their bangumi, favorites and comments. This cannot be undone. Continue?",
+      "hints": "Guard rails: you cannot delete or demote yourself, nor touch the last remaining admin. Deleting a user cascades their bangumi, linked accounts and comments.",
+      "error_usernameFormat": "Username must be 3–64 chars: letters, digits or underscores.",
+      "error_usernameTaken": "Username is already taken.",
+      "error_emailTaken": "Email is already taken.",
+      "error_weakPassword": "Password must be at least 8 characters.",
+      "error_selfRole": "You cannot change your own role.",
+      "error_lastAdmin": "Cannot demote the last admin.",
+      "error_notFound": "User not found."
+    }
   },
   "validation": {
     "required": "This field is required.",

@@ -307,7 +307,8 @@
       "bangumi": "番組管理",
       "contents": "多言語コンテンツ",
       "feeds": "RSSフィード",
-      "subgroups": "字幕グループ"
+      "subgroups": "字幕グループ",
+      "users": "ユーザー管理"
     },
     "importXml": "XML 取り込み",
     "importXmlTitle": "RSS XML 一括取り込み",
@@ -319,7 +320,36 @@
     "importXmlSubscribed": "チャンネルリンクから購読を作成しました。",
     "importXmlError_noItems": "アイテムが解析できませんでした。RSS XML 全体が貼り付けられているか確認してください。",
     "importXmlError_noSeries": "チャンネル情報からタイトルを特定できませんでした。",
-    "importXmlError_parse": "解析に失敗しました：XML が不正または不完全です。"
+    "importXmlError_parse": "解析に失敗しました：XML が不正または不完全です。",
+    "users": {
+      "title": "ユーザー管理",
+      "subtitle": "アカウント・ロール・ログイン方式の管理。",
+      "addUser": "新規ユーザー",
+      "editUser": "ユーザー編集",
+      "formDescription": "プロフィール・権限・パスワードを管理。OAuth アカウントはローカルパスワードが不要です。",
+      "username": "ユーザー名",
+      "displayName": "表示名",
+      "email": "メールアドレス",
+      "role": "ロール",
+      "roleUser": "一般ユーザー",
+      "roleAdmin": "管理者",
+      "password": "初期パスワード（8文字以上）",
+      "resetPassword": "パスワード再設定",
+      "passwordKeepHint": "空白の場合は変更されません",
+      "oauthProviders": "外部ログイン",
+      "bangumiCount": "番組数",
+      "you": "自分",
+      "empty": "ユーザーがいません。",
+      "deleteConfirm": "このユーザーを削除すると、その番組・お気に入り・コメントも削除され、元に戻せません。続行しますか？",
+      "hints": "保護ルール：自分自身の削除・降格はできず、最後の管理者も操作できません。削除すると番組・連携・コメントなどが削除されます。",
+      "error_usernameFormat": "ユーザー名は英数字とアンダースコア 3〜64 文字で入力してください。",
+      "error_usernameTaken": "このユーザー名は使用されています。",
+      "error_emailTaken": "このメールアドレスは使用されています。",
+      "error_weakPassword": "パスワードは 8 文字以上必要です。",
+      "error_selfRole": "自分のロールは変更できません。",
+      "error_lastAdmin": "最後の管理者を降格できません。",
+      "error_notFound": "ユーザーが見つかりません。"
+    }
   },
   "validation": {
     "required": "この項目は必須です。",

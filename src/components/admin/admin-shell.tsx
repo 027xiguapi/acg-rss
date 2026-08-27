@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useTranslations } from "next-intl";
-import { ExternalLink, Languages, Rss, Shield, Tv, Users } from "lucide-react";
+import { ExternalLink, Languages, Rss, Shield, Tv, UserCog, Users } from "lucide-react";
 import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -10,12 +10,13 @@ import { LocaleSwitcher } from "@/components/locale-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { logoutAction } from "@/server/auth/actions";
 
-/** Admin section switcher: bangumi / contents / feeds / subgroups. */
+/** Admin section switcher: bangumi / contents / feeds / subgroups / users. */
 const ADMIN_NAV = [
   { href: "/admin/bangumi", icon: Tv, key: "bangumi" },
   { href: "/admin/contents", icon: Languages, key: "contents" },
   { href: "/admin/feeds", icon: Rss, key: "feeds" },
   { href: "/admin/subgroups", icon: Users, key: "subgroups" },
+  { href: "/admin/users", icon: UserCog, key: "users" },
 ] as const;
 
 function isActive(pathname: string, href: string): boolean {
