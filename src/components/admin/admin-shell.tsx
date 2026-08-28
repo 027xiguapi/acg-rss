@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useTranslations } from "next-intl";
-import { ExternalLink, Languages, Rss, Shield, Tv, UserCog, Users } from "lucide-react";
+import { ExternalLink, Languages, ListVideo, Rss, Shield, Tv, UserCog, Users } from "lucide-react";
 import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { logoutAction } from "@/server/auth/actions";
 const ADMIN_NAV = [
   { href: "/admin/bangumi", icon: Tv, key: "bangumi" },
   { href: "/admin/contents", icon: Languages, key: "contents" },
+  { href: "/admin/episode", icon: ListVideo, key: "episodes" },
   { href: "/admin/feeds", icon: Rss, key: "feeds" },
   { href: "/admin/subgroups", icon: Users, key: "subgroups" },
   { href: "/admin/users", icon: UserCog, key: "users" },

@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, eq, notInArray } from "drizzle-orm";
+import { and, eq, ne, notInArray } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { bangumi, bangumiEpisodes, bangumiInfos, episodeInfos } from "@/db/schema";
@@ -281,4 +281,92 @@ export async function saveEpisodeInfosAction(
 
   revalidatePath("/", "layout");
   return { ok: true };
+}
+
+export interface EpisodeMetaState {
+  ok?: boolean;
+  error?: string;
+}
+
+const episodeMetaSchema = z.object({
+  id: z.preprocess(
+    (v) => (v === "" || v == null ? undefined : v),
+    z.coerce.number().int().positive().optional()
+  ),
+  bangumiId: z.preprocess(
+    (v) => (v === "" || v == null ? undefined : v),
+    z.coerce.number().int().positive().optional()
+  ),
+  number: z.coerce.number().int().min(0).max(100_000),
+});
+
+/**
+ * Create or renumber (when an id is present) an episode. Creation requires a
+ * series; renumbering keeps the episode in its current series and rejects a
+ * duplicate (series, number) pair.
+ */
+export async function saveEpisodeMetaAction(
+  _prev: EpisodeMetaState,
+  formData: FormData
+): Promise<EpisodeMetaState> {
+  const user = await getAdminUser();
+  if (!user) return { error: "notAuthenticated" };
+
+  const parsed = episodeMetaSchema.safeParse({
+    id: formData.get("id"),
+    bangumiId: formData.get("bangumiId"),
+    number: formData.get("number"),
+  });
+  if (!parsed.success) return { error: "invalid" };
+  const { id, bangumiId, number } = parsed.data;
+
+  if (id != null) {
+    const [existing] = await db
+      .select({ id: bangumiEpisodes.id, bangumiId: bangumiEpisodes.bangumiId })
+      .from(bangumiEpisodes)
+      .where(eq(bangumiEpisodes.id, id))
+      .limit(1);
+    if (!existing) return { error: "invalid" };
+
+    const [clash] = await db
+      .select({ id: bangumiEpisodes.id })
+      .from(bangumiEpisodes)
+      .where(
+        and(
+          eq(bangumiEpisodes.bangumiId, existing.bangumiId),
+          eq(bangumiEpisodes.number, number),
+          ne(bangumiEpisodes.id, id)
+        )
+      )
+      .limit(1);
+    if (clash) return { error: "duplicate" };
+
+    await db
+      .update(bangumiEpisodes)
+      .set({ number })
+      .where(eq(bangumiEpisodes.id, id));
+  } else {
+    if (bangumiId == null) return { error: "invalid" };
+    const inserted = await db
+      .insert(bangumiEpisodes)
+      .values({ bangumiId, number })
+      .onConflictDoNothing({
+        target: [bangumiEpisodes.bangumiId, bangumiEpisodes.number],
+      })
+      .returning({ id: bangumiEpisodes.id });
+    if (!inserted[0]) return { error: "duplicate" };
+  }
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function deleteEpisodeAction(formData: FormData): Promise<void> {
+  const user = await getAdminUser();
+  if (!user) return;
+  const id = Number(formData.get("id"));
+  if (!Number.isInteger(id) || id <= 0) return;
+
+  await db.delete(bangumiEpisodes).where(eq(bangumiEpisodes.id, id));
+  revalidatePath("/", "layout");
 }
