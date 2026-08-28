@@ -28,6 +28,14 @@ async function main(): Promise<void> {
 
   const xml = readFileSync(xmlPath, "utf8");
   const feed = await parseFeedXml(xml);
+
+  // A document with only a <channel> (no <item>) has nothing to archive;
+  // refuse it rather than creating an empty bangumi + subscription.
+  if (feed.items.length === 0) {
+    console.error("The XML contains no items — nothing to import.");
+    process.exit(1);
+  }
+
   const url =
     urlArg ??
     feed.link ??

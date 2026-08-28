@@ -32,6 +32,13 @@ async function main(): Promise<void> {
   console.log(`Fetching feed metadata: ${url}`);
   const meta = await fetchFeedMeta(url);
 
+  // A feed with only a <channel> (no <item>) carries nothing to archive;
+  // skip it without creating a bangumi or subscription row.
+  if (meta.itemCount === 0) {
+    console.log(`Feed has no items — skipping (nothing to import): ${url}`);
+    process.exit(0);
+  }
+
   const rawTitle = meta.title ?? null;
   const firstItemTitle = meta.firstItemTitle ?? null;
   const seriesTitle =
