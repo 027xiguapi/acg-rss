@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/db";
-import { rssFeeds } from "@/db/schema";
+import { rssFeeds, type User } from "@/db/schema";
 import { getAdminUser } from "@/server/auth/session";
 import {
   cleanSeriesTitle,
@@ -26,13 +26,21 @@ export interface FetchState {
   error?: string;
 }
 
-/** Result of subscribing by URL, echoed back for the success toast. */
-export interface SubscribeFeedState {
-  ok?: boolean;
+/** Result of one URL in a batch subscription run. */
+export interface SubscribeFeedResult {
+  url: string;
+  ok: boolean;
   series?: string;
   created?: number;
   skipped?: number;
   /** Stable error code: invalid | duplicate | fetch | noItems | noSeries | ingest */
+  error?: string;
+}
+
+/** Result of subscribing a batch of URLs, echoed back to the dialog. */
+export interface SubscribeFeedState {
+  ok?: boolean;
+  results?: SubscribeFeedResult[];
   error?: string;
 }
 
@@ -42,45 +50,40 @@ const rssFeedSchema = z.object({
   bangumiId: z.coerce.number().int().positive(),
 });
 
+const subscribeUrlsSchema = z.string().trim().min(1).max(1_000_000);
+
 const subscribeUrlSchema = z.string().trim().url().max(2048);
 
 /**
- * Subscribe with just a feed URL, mirroring the batch XML importer:
- * fetch the feed, derive the series title from the channel metadata
- * (falling back to the first item's title), create or reuse the tracked
- * bangumi, register the subscription and ingest its current items.
+ * Subscribe one feed URL, mirroring the batch XML importer: fetch the
+ * feed, derive the series title from the channel metadata (falling back
+ * to the first item's title), create or reuse the tracked bangumi,
+ * register the subscription and ingest its current items.
  */
-export async function subscribeRssByUrlAction(
-  _prev: SubscribeFeedState,
-  formData: FormData
-): Promise<SubscribeFeedState> {
-  const user = await getAdminUser();
-  if (!user) return { error: "notAuthenticated" };
-
-  const urlResult = subscribeUrlSchema.safeParse(formData.get("url"));
-  if (!urlResult.success) return { error: "invalid" };
-  const url = urlResult.data;
-
+async function subscribeOneUrl(
+  user: User,
+  url: string
+): Promise<SubscribeFeedResult> {
   const [existing] = await db
     .select({ id: rssFeeds.id })
     .from(rssFeeds)
     .where(eq(rssFeeds.url, url))
     .limit(1);
-  if (existing) return { error: "duplicate" };
+  if (existing) return { url, ok: false, error: "duplicate" };
 
   let parsedFeed;
   try {
     parsedFeed = await parseFeed(url);
   } catch {
-    return { error: "fetch" };
+    return { url, ok: false, error: "fetch" };
   }
-  if (parsedFeed.items.length === 0) return { error: "noItems" };
+  if (parsedFeed.items.length === 0) return { url, ok: false, error: "noItems" };
 
   const firstParsed = parseTorrentTitle(parsedFeed.items[0].title);
   const seriesTitle =
     cleanSeriesTitle(parsedFeed.title) ??
     cleanSeriesTitle(firstParsed.bangumiTitle);
-  if (!seriesTitle) return { error: "noSeries" };
+  if (!seriesTitle) return { url, ok: false, error: "noSeries" };
 
   let bangumiId = await findBangumiIdByTitle(seriesTitle);
   if (bangumiId == null) {
@@ -93,12 +96,12 @@ export async function subscribeRssByUrlAction(
     .values({ name: seriesTitle, url, bangumiId })
     .onConflictDoNothing({ target: rssFeeds.url })
     .returning({ id: rssFeeds.id });
-  if (inserted.length === 0) return { error: "duplicate" };
+  if (inserted.length === 0) return { url, ok: false, error: "duplicate" };
 
   try {
     const ingested = await ingestItems(bangumiId, parsedFeed.items);
-    revalidatePath("/", "layout");
     return {
+      url,
       ok: true,
       series: seriesTitle,
       created: ingested.created,
@@ -106,8 +109,45 @@ export async function subscribeRssByUrlAction(
     };
   } catch {
     // The subscription itself is in place; a later manual/cron fetch can retry.
-    return { error: "ingest" };
+    return { url, ok: false, error: "ingest" };
   }
+}
+
+/**
+ * Batch-subscribe: one URL per line. Each URL is processed independently
+ * (a failure does not abort the rest), and per-URL outcomes are returned
+ * in input order.
+ */
+export async function subscribeRssByUrlAction(
+  _prev: SubscribeFeedState,
+  formData: FormData
+): Promise<SubscribeFeedState> {
+  const user = await getAdminUser();
+  if (!user) return { error: "notAuthenticated" };
+
+  const raw = subscribeUrlsSchema.safeParse(formData.get("urls"));
+  if (!raw.success) return { error: "invalid" };
+
+  const urls = Array.from(
+    new Set(
+      raw.data
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+    )
+  );
+
+  const results: SubscribeFeedResult[] = [];
+  for (const url of urls) {
+    if (!subscribeUrlSchema.safeParse(url).success) {
+      results.push({ url, ok: false, error: "invalid" });
+      continue;
+    }
+    results.push(await subscribeOneUrl(user, url));
+  }
+
+  revalidatePath("/", "layout");
+  return { ok: true, results };
 }
 
 export async function updateRssFeedAction(

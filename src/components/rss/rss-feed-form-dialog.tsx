@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useActionState } from "react";
 import { useTranslations } from "next-intl";
-import { Loader2, Pencil, Plus, Rss } from "lucide-react";
+import { CheckCircle2, Loader2, Pencil, Plus, Rss, XCircle } from "lucide-react";
 import {
   subscribeRssByUrlAction,
   updateRssFeedAction,
@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogClose,
@@ -48,12 +49,12 @@ export function RssFeedFormDialog({
   );
 }
 
-/** Inline error code from subscribeRssByUrlAction → message key suffix */
-function errorCode(state: SubscribeFeedState): string | null {
-  if (!state.error || state.error === "notAuthenticated") return null;
-  if (state.error === "duplicate") return null; // surfaced via toast
-  return ["invalid", "noItems", "noSeries", "ingest"].includes(state.error)
-    ? state.error
+/** Stable error code → message key suffix */
+function resultErrorKey(error: string | undefined): string | null {
+  if (!error || error === "notAuthenticated") return null;
+  if (error === "duplicate") return "duplicate";
+  return ["invalid", "noItems", "noSeries", "ingest"].includes(error)
+    ? error
     : "fetch";
 }
 
@@ -68,18 +69,17 @@ function SubscribeRssFeedDialog() {
     fd: FormData
   ): Promise<SubscribeFeedState> {
     const result = await subscribeRssByUrlAction(prev, fd);
-    if (result.ok) {
-      setOpen(false);
+    if (result.ok && result.results) {
+      const succeeded = result.results.filter((r) => r.ok).length;
+      const failed = result.results.length - succeeded;
       toast(
-        t("feedSubscribeSuccess", {
-          series: result.series ?? "",
-          created: result.created ?? 0,
-          skipped: result.skipped ?? 0,
+        t("feedSubscribeBatchSummary", {
+          total: result.results.length,
+          succeeded,
+          failed,
         }),
-        "success"
+        failed > 0 ? "error" : "success"
       );
-    } else if (result.error === "duplicate") {
-      toast(t("feedDuplicate"), "error");
     }
     return result;
   }
@@ -88,7 +88,7 @@ function SubscribeRssFeedDialog() {
     SubscribeFeedState,
     FormData
   >(actionWithSideEffects, {});
-  const errorKey = errorCode(state);
+  const results = state.results ?? [];
 
   return (
     <>
@@ -105,24 +105,69 @@ function SubscribeRssFeedDialog() {
         </DialogHeader>
         <DialogContent>
           <form action={formAction} className="flex flex-col gap-4">
-            {errorKey ? (
+            {state.error === "invalid" ? (
               <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {t(`feedSubscribeError_${errorKey}`)}
+                {t("feedSubscribeError_invalid")}
               </p>
             ) : null}
 
             <div className="flex flex-col gap-2">
-              <Label htmlFor="feed-url">{tCommon("url")}</Label>
-              <Input
-                id="feed-url"
-                name="url"
-                type="url"
+              <Label htmlFor="feed-urls">{t("feedSubscribeLabel")}</Label>
+              <Textarea
+                id="feed-urls"
+                name="urls"
                 required
-                autoFocus
-                maxLength={2048}
-                placeholder="https://mikanani.me/RSS/Bangumi?bangumiId=227"
+                rows={10}
+                spellCheck={false}
+                placeholder={t("feedSubscribePlaceholder")}
+                className="font-mono text-xs"
               />
             </div>
+
+            {results.length > 0 ? (
+              <ul className="max-h-56 space-y-2 overflow-y-auto rounded-md border bg-muted/30 p-3 text-sm">
+                {results.map((r) => {
+                  const key = resultErrorKey(r.error);
+                  return (
+                    <li
+                      key={r.url}
+                      className="flex items-start gap-2 text-muted-foreground"
+                    >
+                      {r.ok ? (
+                        <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-500" />
+                      ) : (
+                        <XCircle className="mt-0.5 size-4 shrink-0 text-destructive" />
+                      )}
+                      <div className="min-w-0">
+                        <span
+                          className="block truncate font-mono text-xs"
+                          title={r.url}
+                        >
+                          {r.url}
+                        </span>
+                        {r.ok ? (
+                          <span className="text-xs">
+                            {t("feedSubscribeSuccess", {
+                              series: r.series ?? "",
+                              created: r.created ?? 0,
+                              skipped: r.skipped ?? 0,
+                            })}
+                          </span>
+                        ) : key ? (
+                          <span className="text-xs text-destructive">
+                            {t(`feedSubscribeError_${key}`)}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-destructive">
+                            {tCommon("error")}
+                          </span>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : null}
 
             <div className="flex justify-end gap-2 pt-2">
               <Button
