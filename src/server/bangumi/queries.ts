@@ -16,8 +16,12 @@ export type BangumiIndex = {
   total: number;
   /** Bangumi matching the search query (all bangumi when the query is empty). */
   results: BangumiCardData[];
-  /** One section per ISO weekday (1=Mon … 7=Sun), empty sections included. */
+  /** One section per ISO weekday (1=Mon … 7=Sun) that has entries, Sunday first. */
   daySections: { day: number; entries: BangumiCardData[] }[];
+  /** Bangumi typed MOVIE, shown as their own category. */
+  movie: BangumiCardData[];
+  /** Bangumi typed OVA, shown as their own category. */
+  ova: BangumiCardData[];
   /** Bangumi without a valid weekly air day. */
   unscheduled: BangumiCardData[];
 };
@@ -75,10 +79,22 @@ export async function getBangumiIndex(query: string): Promise<BangumiIndex> {
     visible = decorated.filter((r) => r.title.toLowerCase().includes(needle) || synonymHit.has(r.id));
   }
 
-  // Group by weekly air day (ISO weekday); the rest land in "unscheduled"
+  // Group by weekly air day (ISO weekday), rendered Sunday-first (7→1) with
+  // only the days that actually have entries; MOVIE / OVA get their own
+  // categories and the rest land in "unscheduled"
   const byDay = new Map<number, BangumiCardData[]>();
+  const movie: BangumiCardData[] = [];
+  const ova: BangumiCardData[] = [];
   const unscheduled: BangumiCardData[] = [];
   for (const item of visible) {
+    if (item.type === "MOVIE") {
+      movie.push(toEntry(item));
+      continue;
+    }
+    if (item.type === "OVA") {
+      ova.push(toEntry(item));
+      continue;
+    }
     if (item.airDay && item.airDay >= 1 && item.airDay <= 7) {
       const entries = byDay.get(item.airDay) ?? [];
       entries.push(toEntry(item));
@@ -91,10 +107,11 @@ export async function getBangumiIndex(query: string): Promise<BangumiIndex> {
   return {
     total: rows.length,
     results: visible.map(toEntry),
-    daySections: [1, 2, 3, 4, 5, 6, 7].map((day) => ({
-      day,
-      entries: byDay.get(day) ?? [],
-    })),
+    daySections: [7, 6, 5, 4, 3, 2, 1]
+      .map((day) => ({ day, entries: byDay.get(day) ?? [] }))
+      .filter((section) => section.entries.length > 0),
+    movie,
+    ova,
     unscheduled,
   };
 }

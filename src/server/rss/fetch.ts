@@ -8,7 +8,7 @@ import {
   type RssFeed,
 } from "@/db/schema";
 import { findOrCreateEpisode } from "@/server/bangumi/linker";
-import { resolveSubgroupId } from "@/server/subgroups/resolve";
+import { resolveOrCreateSubgroupId } from "@/server/subgroups/resolve";
 import {
   computeInfoHash,
   extractMagnet,
@@ -239,7 +239,7 @@ export async function ingestItems(
     const infoHash = computeInfoHash(item.magnet, item.torrentUrl);
     const parsed = parseTorrentTitle(item.title);
     const subgroup = extractSubgroup(item.title);
-    const subgroupId = await resolveSubgroupId(subgroup);
+    const subgroupId = await resolveOrCreateSubgroupId(subgroup);
     const subtitleInfo = extractSubtitleInfo(item.title);
 
     const inserted = await db

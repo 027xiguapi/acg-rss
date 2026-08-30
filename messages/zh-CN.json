@@ -1,10 +1,10 @@
 {
   "Metadata": {
-    "title": "TorrentHub — RSS 聚合与下载管理",
+    "title": "acg-rss — RSS 聚合与下载管理",
     "description": "聚合 Torrent RSS 源，通过智能规则匹配，自动推送下载任务到你的 qBittorrent。"
   },
   "common": {
-    "appName": "TorrentHub",
+    "appName": "acg-rss",
     "tagline": "RSS 聚合与下载管理",
     "save": "保存",
     "create": "创建",
@@ -74,7 +74,7 @@
   },
   "landing": {
     "hero": "番组 → 集 → 种子，一层不少。",
-    "subtitle": "TorrentHub 追踪你在追的作品，把每个种子按标题自动解析、归集到对应剧集之下。",
+    "subtitle": "acg-rss 追踪你在追的作品，把每个种子按标题自动解析、归集到对应剧集之下。",
     "cta": "开始使用",
     "login": "我已有账号",
     "feature1Title": "层级组织",

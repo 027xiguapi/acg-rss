@@ -1,10 +1,10 @@
 {
   "Metadata": {
-    "title": "TorrentHub — RSS アグリゲーター & ダウンロードマネージャー",
+    "title": "acg-rss — RSS アグリゲーター & ダウンロードマネージャー",
     "description": "Torrent の RSS フィードを集約し、スマートルールでマッチングして、qBittorrent に自動でダウンロードをプッシュします。"
   },
   "common": {
-    "appName": "TorrentHub",
+    "appName": "acg-rss",
     "tagline": "RSS アグリゲーター & ダウンロードマネージャー",
     "save": "保存",
     "create": "作成",

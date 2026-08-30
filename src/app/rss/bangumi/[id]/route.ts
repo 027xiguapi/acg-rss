@@ -30,7 +30,7 @@ export async function GET(
   const base = siteBaseUrl(request);
   const torrents = await loadBangumiTorrents(bangumiId);
 
-  const title = `TorrentHub - ${item.title}`;
+  const title = `acg-rss - ${item.title}`;
   const xml = renderRss(
     {
       title,

@@ -38,7 +38,7 @@ export async function generateMetadata({
   return {
     title: {
       default: t("title"),
-      template: `%s · TorrentHub`,
+      template: `%s · acg-rss`,
     },
     description: t("description"),
   };

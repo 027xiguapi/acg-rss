@@ -1,10 +1,10 @@
 {
   "Metadata": {
-    "title": "TorrentHub — RSS 수집기 및 다운로드 관리자",
+    "title": "acg-rss — RSS 수집기 및 다운로드 관리자",
     "description": "토렌트 RSS 피드를 수집하고 스마트 규칙으로 매칭하여 qBittorrent에 자동으로 다운로드를 전송합니다."
   },
   "common": {
-    "appName": "TorrentHub",
+    "appName": "acg-rss",
     "tagline": "RSS 수집기 및 다운로드 관리자",
     "save": "저장",
     "create": "생성",

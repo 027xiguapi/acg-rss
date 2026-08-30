@@ -13,7 +13,7 @@ import {
   extractSubtitleInfo,
   parseTorrentTitle,
 } from "@/lib/parser";
-import { resolveSubgroupId } from "@/server/subgroups/resolve";
+import { resolveOrCreateSubgroupId } from "@/server/subgroups/resolve";
 
 export interface TorrentFormState {
   ok?: boolean;
@@ -74,7 +74,7 @@ export async function createTorrentAction(
 
   const parsedTitle = parseTorrentTitle(data.title);
   const subgroup = extractSubgroup(data.title);
-  const subgroupId = await resolveSubgroupId(subgroup);
+  const subgroupId = await resolveOrCreateSubgroupId(subgroup);
   const subtitleInfo = extractSubtitleInfo(data.title);
   const inserted = await db
     .insert(torrentItems)
@@ -150,7 +150,7 @@ export async function updateTorrentAction(
 
   const parsedTitle = parseTorrentTitle(data.title);
   const subgroup = extractSubgroup(data.title);
-  const subgroupId = await resolveSubgroupId(subgroup);
+  const subgroupId = await resolveOrCreateSubgroupId(subgroup);
   const subtitleInfo = extractSubtitleInfo(data.title);
   const updated = await db
     .update(torrentItems)

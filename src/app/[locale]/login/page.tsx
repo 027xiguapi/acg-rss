@@ -56,7 +56,7 @@ export default async function LoginPage({
           <span className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <Magnet className="size-4" />
           </span>
-          TorrentHub
+          acg-rss
         </Link>
         <div className="flex items-center gap-2">
           <LocaleSwitcher />

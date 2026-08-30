@@ -7,6 +7,7 @@ import { HomeHeader } from "@/components/home/home-header";
 import { SearchResults } from "@/components/home/search-results";
 import { WeeklySchedule } from "@/components/home/weekly-schedule";
 import { EmptyState } from "@/components/empty-state";
+import { DayNav } from "@/components/home/day-nav";
 
 /**
  * Mikan-style public index: tracked bangumi grouped by weekly air day, with a
@@ -35,6 +36,7 @@ export default async function HomePage({
   return (
     <div className="flex min-h-screen flex-col">
       <HomeHeader user={user} query={query} />
+      <DayNav />
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
         {query ? (
@@ -48,6 +50,8 @@ export default async function HomePage({
         ) : (
           <WeeklySchedule
             daySections={index.daySections}
+            movie={index.movie}
+            ova={index.ova}
             unscheduled={index.unscheduled}
           />
         )}
