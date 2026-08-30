@@ -62,7 +62,10 @@
     "theme": "主题",
     "light": "浅色",
     "dark": "深色",
-    "system": "跟随系统"
+    "system": "跟随系统",
+    "batchDelete": "批量删除",
+    "batchDeleteWithCount": "删除选中（{count}）",
+    "confirmBatchDelete": "确定删除选中的 {count} 项吗？此操作不可恢复。"
   },
   "nav": {
     "bangumi": "番组",

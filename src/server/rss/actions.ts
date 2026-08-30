@@ -1,11 +1,12 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/db";
 import { rssFeeds, type User } from "@/db/schema";
 import { getAdminUser } from "@/server/auth/session";
+import { parseIdList } from "@/lib/form-data";
 import {
   cleanSeriesTitle,
   createBangumi,
@@ -192,6 +193,20 @@ export async function deleteRssFeedAction(formData: FormData): Promise<void> {
   if (!Number.isInteger(id) || id <= 0) return;
 
   await db.delete(rssFeeds).where(eq(rssFeeds.id, id));
+  revalidatePath("/", "layout");
+}
+
+/** Delete every feed checked in the admin table (formData ids). */
+export async function batchDeleteRssFeedsAction(
+  formData: FormData
+): Promise<void> {
+  const user = await getAdminUser();
+  if (!user) return;
+
+  const ids = parseIdList(formData);
+  if (ids.length === 0) return;
+
+  await db.delete(rssFeeds).where(inArray(rssFeeds.id, ids));
   revalidatePath("/", "layout");
 }
 

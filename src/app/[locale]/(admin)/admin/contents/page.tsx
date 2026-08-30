@@ -5,7 +5,7 @@ import { FileText, Tv } from "lucide-react";
 import { db } from "@/db";
 import { bangumi, bangumiEpisodes, episodeInfos } from "@/db/schema";
 import { withTitles } from "@/server/bangumi/queries";
-import { PAGE_SIZE, parsePage } from "@/lib/pagination";
+import { parsePage, parsePageSize } from "@/lib/pagination";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +18,11 @@ import { EpisodeInfosEditor } from "@/components/bangumi/episode-infos-editor";
 export const metadata: Metadata = { title: "Episode Contents" };
 
 interface PageProps {
-  searchParams: Promise<{ bangumi?: string; page?: string }>;
+  searchParams: Promise<{
+    bangumi?: string;
+    page?: string;
+    pageSize?: string;
+  }>;
 }
 
 /**
@@ -28,11 +32,12 @@ interface PageProps {
  * to any row. Episodes are paginated in ascending episode-number order.
  */
 export default async function AdminContentsPage({ searchParams }: PageProps) {
-  const { bangumi: bangumiParam, page } = await searchParams;
+  const { bangumi: bangumiParam, page, pageSize: pageSizeParam } = await searchParams;
   const t = await getTranslations("admin");
   const tBangumi = await getTranslations("bangumi");
   const tCommon = await getTranslations("common");
   const pageNumber = parsePage(page);
+  const pageSize = parsePageSize(pageSizeParam);
 
   // Decorate with primary names from bangumi_infos, sorted by title
   const seriesList = await withTitles(await db.select().from(bangumi));
@@ -56,15 +61,15 @@ export default async function AdminContentsPage({ searchParams }: PageProps) {
     .select({ count: sql<number>`count(*)::int` })
     .from(bangumiEpisodes)
     .where(eq(bangumiEpisodes.bangumiId, selected.id));
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   const episodes = await db
     .select()
     .from(bangumiEpisodes)
     .where(eq(bangumiEpisodes.bangumiId, selected.id))
     .orderBy(asc(bangumiEpisodes.number))
-    .limit(PAGE_SIZE)
-    .offset((pageNumber - 1) * PAGE_SIZE);
+    .limit(pageSize)
+    .offset((pageNumber - 1) * pageSize);
 
   const contentRows = episodes.length
     ? await db
@@ -94,8 +99,8 @@ export default async function AdminContentsPage({ searchParams }: PageProps) {
     byEpisode.set(row.episodeId, list);
   }
 
-  const start = total === 0 ? 0 : (pageNumber - 1) * PAGE_SIZE + 1;
-  const end = Math.min(total, pageNumber * PAGE_SIZE);
+  const start = total === 0 ? 0 : (pageNumber - 1) * pageSize + 1;
+  const end = Math.min(total, pageNumber * pageSize);
 
   return (
     <div className="flex flex-col gap-6">
@@ -174,6 +179,7 @@ export default async function AdminContentsPage({ searchParams }: PageProps) {
               page={pageNumber}
               totalPages={totalPages}
               params={{ bangumi: String(selected.id) }}
+              pageSize={pageSize}
             />
           </div>
         </>

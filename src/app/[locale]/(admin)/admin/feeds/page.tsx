@@ -5,7 +5,7 @@ import { Rss, Search } from "lucide-react";
 import { db } from "@/db";
 import { bangumi, bangumiInfos, rssFeeds } from "@/db/schema";
 import { formatDateTime } from "@/lib/format";
-import { PAGE_SIZE, parsePage, searchPattern } from "@/lib/pagination";
+import { parsePage, parsePageSize, searchPattern } from "@/lib/pagination";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -29,11 +29,18 @@ import {
 import { RssFeedRowActions } from "@/components/rss/rss-feed-row-actions";
 import { RssXmlImportDialog } from "@/components/rss/rss-xml-import-dialog";
 import { FetchAllFeedsButton } from "@/components/rss/fetch-all-feeds-button";
+import {
+  BatchDeleteBar,
+  BatchRowCheckbox,
+  BatchSelectAllCheckbox,
+  BatchSelectionProvider,
+} from "@/components/admin/batch-delete";
+import { batchDeleteRssFeedsAction } from "@/server/rss/actions";
 
 export const metadata: Metadata = { title: "RSS Feeds" };
 
 interface PageProps {
-  searchParams: Promise<{ q?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; page?: string; pageSize?: string }>;
 }
 
 /**
@@ -46,9 +53,10 @@ export default async function AdminFeedsPage({ searchParams }: PageProps) {
   const t = await getTranslations("admin");
   const tCommon = await getTranslations("common");
 
-  const { q, page } = await searchParams;
+  const { q, page, pageSize: pageSizeParam } = await searchParams;
   const query = (q ?? "").trim();
   const pageNumber = parsePage(page);
+  const pageSize = parsePageSize(pageSizeParam);
 
   const where = query
     ? or(
@@ -61,15 +69,15 @@ export default async function AdminFeedsPage({ searchParams }: PageProps) {
     .select({ count: sql<number>`count(*)::int` })
     .from(rssFeeds)
     .where(where);
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   const feeds = await db
     .select()
     .from(rssFeeds)
     .where(where)
     .orderBy(rssFeeds.id)
-    .limit(PAGE_SIZE)
-    .offset((pageNumber - 1) * PAGE_SIZE);
+    .limit(pageSize)
+    .offset((pageNumber - 1) * pageSize);
 
   const bangumiRows = await db
     .select({ id: bangumi.id, title: bangumiInfos.title })
@@ -83,8 +91,8 @@ export default async function AdminFeedsPage({ searchParams }: PageProps) {
   }));
   const titleMap = new Map(bangumiRows.map((r) => [r.id, r.title]));
 
-  const start = total === 0 ? 0 : (pageNumber - 1) * PAGE_SIZE + 1;
-  const end = Math.min(total, pageNumber * PAGE_SIZE);
+  const start = total === 0 ? 0 : (pageNumber - 1) * pageSize + 1;
+  const end = Math.min(total, pageNumber * pageSize);
 
   return (
     <div className="flex flex-col gap-6">
@@ -126,57 +134,66 @@ export default async function AdminFeedsPage({ searchParams }: PageProps) {
       ) : (
         <>
           <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{tCommon("name")}</TableHead>
-                    <TableHead>{tCommon("url")}</TableHead>
-                    <TableHead>{t("feedBangumi")}</TableHead>
-                    <TableHead>{tCommon("status")}</TableHead>
-                    <TableHead>{tCommon("lastFetched")}</TableHead>
-                    <TableHead className="text-right">{tCommon("actions")}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {feeds.map((feed) => (
-                    <TableRow key={feed.id}>
-                      <TableCell className="font-medium">{feed.name}</TableCell>
-                      <TableCell
-                        className="max-w-60 truncate text-sm text-muted-foreground"
-                        title={feed.url}
-                      >
-                        {feed.url}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {titleMap.get(feed.bangumiId) ?? "—"}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={feed.enabled ? "success" : "secondary"}>
-                          {feed.enabled ? tCommon("enabled") : tCommon("disabled")}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
-                        {feed.lastFetchedAt
-                          ? formatDateTime(feed.lastFetchedAt, locale)
-                          : tCommon("never")}
-                        {feed.lastError ? (
-                          <span
-                            className="block max-w-52 truncate text-xs text-destructive"
-                            title={feed.lastError}
-                          >
-                            {feed.lastError}
-                          </span>
-                        ) : null}
-                      </TableCell>
-                      <TableCell>
-                        <RssFeedRowActions feed={feed} bangumiOptions={bangumiOptions} />
-                      </TableCell>
+            <BatchSelectionProvider>
+              <BatchDeleteBar action={batchDeleteRssFeedsAction} />
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-10">
+                        <BatchSelectAllCheckbox ids={feeds.map((f) => f.id)} />
+                      </TableHead>
+                      <TableHead>{tCommon("name")}</TableHead>
+                      <TableHead>{tCommon("url")}</TableHead>
+                      <TableHead>{t("feedBangumi")}</TableHead>
+                      <TableHead>{tCommon("status")}</TableHead>
+                      <TableHead>{tCommon("lastFetched")}</TableHead>
+                      <TableHead className="text-right">{tCommon("actions")}</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
+                  </TableHeader>
+                  <TableBody>
+                    {feeds.map((feed) => (
+                      <TableRow key={feed.id}>
+                        <TableCell>
+                          <BatchRowCheckbox id={feed.id} />
+                        </TableCell>
+                        <TableCell className="font-medium">{feed.name}</TableCell>
+                        <TableCell
+                          className="max-w-60 truncate text-sm text-muted-foreground"
+                          title={feed.url}
+                        >
+                          {feed.url}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {titleMap.get(feed.bangumiId) ?? "—"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={feed.enabled ? "success" : "secondary"}>
+                            {feed.enabled ? tCommon("enabled") : tCommon("disabled")}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                          {feed.lastFetchedAt
+                            ? formatDateTime(feed.lastFetchedAt, locale)
+                            : tCommon("never")}
+                          {feed.lastError ? (
+                            <span
+                              className="block max-w-52 truncate text-xs text-destructive"
+                              title={feed.lastError}
+                            >
+                              {feed.lastError}
+                            </span>
+                          ) : null}
+                        </TableCell>
+                        <TableCell>
+                          <RssFeedRowActions feed={feed} bangumiOptions={bangumiOptions} />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </BatchSelectionProvider>
           </Card>
 
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -188,6 +205,7 @@ export default async function AdminFeedsPage({ searchParams }: PageProps) {
               page={pageNumber}
               totalPages={totalPages}
               params={query ? { q: query } : undefined}
+              pageSize={pageSize}
             />
           </div>
         </>

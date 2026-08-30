@@ -62,7 +62,10 @@
     "theme": "Theme",
     "light": "Light",
     "dark": "Dark",
-    "system": "System"
+    "system": "System",
+    "batchDelete": "Delete selected",
+    "batchDeleteWithCount": "Delete ({count})",
+    "confirmBatchDelete": "Delete the {count} selected item(s)? This cannot be undone."
   },
   "nav": {
     "bangumi": "Bangumi",

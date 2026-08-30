@@ -1,11 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, eq, ne, notInArray } from "drizzle-orm";
+import { and, eq, inArray, ne, notInArray } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { bangumi, bangumiEpisodes, bangumiInfos, episodeInfos } from "@/db/schema";
 import { getAdminUser } from "@/server/auth/session";
+import { parseIdList } from "@/lib/form-data";
 import { backfillBangumi } from "./linker";
 import { parseNamesField } from "./names";
 
@@ -183,6 +184,23 @@ export async function deleteBangumiAction(formData: FormData): Promise<void> {
   if (!Number.isInteger(id) || id <= 0) return;
 
   await db.delete(bangumi).where(and(eq(bangumi.id, id), eq(bangumi.userId, user.id)));
+  revalidatePath("/", "layout");
+}
+
+/** Delete every bangumi checked in the admin table (formData ids). Like the
+ *  single delete, restricted to series owned by the caller. */
+export async function batchDeleteBangumiAction(
+  formData: FormData
+): Promise<void> {
+  const user = await getAdminUser();
+  if (!user) return;
+
+  const ids = parseIdList(formData);
+  if (ids.length === 0) return;
+
+  await db
+    .delete(bangumi)
+    .where(and(inArray(bangumi.id, ids), eq(bangumi.userId, user.id)));
   revalidatePath("/", "layout");
 }
 
@@ -386,5 +404,19 @@ export async function deleteEpisodeAction(formData: FormData): Promise<void> {
   if (!Number.isInteger(id) || id <= 0) return;
 
   await db.delete(bangumiEpisodes).where(eq(bangumiEpisodes.id, id));
+  revalidatePath("/", "layout");
+}
+
+/** Delete every episode checked in the admin table (formData ids). */
+export async function batchDeleteEpisodesAction(
+  formData: FormData
+): Promise<void> {
+  const user = await getAdminUser();
+  if (!user) return;
+
+  const ids = parseIdList(formData);
+  if (ids.length === 0) return;
+
+  await db.delete(bangumiEpisodes).where(inArray(bangumiEpisodes.id, ids));
   revalidatePath("/", "layout");
 }

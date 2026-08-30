@@ -62,7 +62,10 @@
     "theme": "테마",
     "light": "라이트",
     "dark": "다크",
-    "system": "시스템"
+    "system": "시스템",
+    "batchDelete": "선택 항목 삭제",
+    "batchDeleteWithCount": "선택 삭제 ({count})",
+    "confirmBatchDelete": "선택한 {count}개 항목을 삭제하시겠습니까? 되돌릴 수 없습니다."
   },
   "nav": {
     "bangumi": "방구미",

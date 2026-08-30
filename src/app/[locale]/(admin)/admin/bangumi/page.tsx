@@ -5,7 +5,7 @@ import { Languages, Search, Tv } from "lucide-react";
 import { db } from "@/db";
 import { bangumi, bangumiEpisodes, bangumiInfos, torrentItems, users } from "@/db/schema";
 import { formatDateTime } from "@/lib/format";
-import { PAGE_SIZE, parsePage, searchPattern } from "@/lib/pagination";
+import { parsePage, parsePageSize, searchPattern } from "@/lib/pagination";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -25,11 +25,18 @@ import { Pagination } from "@/components/admin/pagination";
 import { BangumiFormDialog } from "@/components/bangumi/bangumi-form-dialog";
 import { AirDaySelect } from "@/components/bangumi/air-day-select";
 import { DeleteBangumiButton } from "@/components/bangumi/bangumi-row-actions";
+import {
+  BatchDeleteBar,
+  BatchRowCheckbox,
+  BatchSelectAllCheckbox,
+  BatchSelectionProvider,
+} from "@/components/admin/batch-delete";
+import { batchDeleteBangumiAction } from "@/server/bangumi/actions";
 
 export const metadata: Metadata = { title: "Bangumi Management" };
 
 interface PageProps {
-  searchParams: Promise<{ q?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; page?: string; pageSize?: string }>;
 }
 
 /**
@@ -44,9 +51,10 @@ export default async function AdminBangumiPage({ searchParams }: PageProps) {
   const tBangumi = await getTranslations("bangumi");
   const tCommon = await getTranslations("common");
 
-  const { q, page } = await searchParams;
+  const { q, page, pageSize: pageSizeParam } = await searchParams;
   const query = (q ?? "").trim();
   const pageNumber = parsePage(page);
+  const pageSize = parsePageSize(pageSizeParam);
 
   // A search term filters to bangumi whose primary or synonym name matches.
   const nameMatch = query
@@ -61,7 +69,7 @@ export default async function AdminBangumiPage({ searchParams }: PageProps) {
     .select({ count: sql<number>`count(*)::int` })
     .from(bangumi)
     .where(where);
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   const rows = await db
     .select({ bangumi: bangumi, updatedByName: users.username })
@@ -69,8 +77,8 @@ export default async function AdminBangumiPage({ searchParams }: PageProps) {
     .leftJoin(users, eq(bangumi.updatedBy, users.id))
     .where(where)
     .orderBy(desc(bangumi.updatedAt))
-    .limit(PAGE_SIZE)
-    .offset((pageNumber - 1) * PAGE_SIZE);
+    .limit(pageSize)
+    .offset((pageNumber - 1) * pageSize);
 
   // Aggregates per bangumi: episodes and linked torrents, plus the synonym
   // names the edit dialog needs (separate queries avoid a cross join).
@@ -129,8 +137,8 @@ export default async function AdminBangumiPage({ searchParams }: PageProps) {
     else namesMap.set(row.bangumiId, [line]);
   }
 
-  const start = total === 0 ? 0 : (pageNumber - 1) * PAGE_SIZE + 1;
-  const end = Math.min(total, pageNumber * PAGE_SIZE);
+  const start = total === 0 ? 0 : (pageNumber - 1) * pageSize + 1;
+  const end = Math.min(total, pageNumber * pageSize);
 
   return (
     <div className="flex flex-col gap-6">
@@ -169,11 +177,16 @@ export default async function AdminBangumiPage({ searchParams }: PageProps) {
       ) : (
         <>
           <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{tBangumi("bangumiTitle")}</TableHead>
+            <BatchSelectionProvider>
+              <BatchDeleteBar action={batchDeleteBangumiAction} />
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-10">
+                        <BatchSelectAllCheckbox ids={rows.map((r) => r.bangumi.id)} />
+                      </TableHead>
+                      <TableHead>{tBangumi("bangumiTitle")}</TableHead>
                     <TableHead>{tBangumi("watchStatus")}</TableHead>
                     <TableHead>{tBangumi("airDay")}</TableHead>
                     <TableHead>{t("episodesColumn")}</TableHead>
@@ -187,6 +200,9 @@ export default async function AdminBangumiPage({ searchParams }: PageProps) {
                     const item = { ...raw, title: primaryMap.get(raw.id) ?? "" };
                     return (
                     <TableRow key={item.id}>
+                      <TableCell>
+                        <BatchRowCheckbox id={item.id} />
+                      </TableCell>
                       <TableCell>
                         <div className="flex min-w-0 flex-col gap-1">
                           <Link
@@ -265,6 +281,7 @@ export default async function AdminBangumiPage({ searchParams }: PageProps) {
                 </TableBody>
               </Table>
             </CardContent>
+            </BatchSelectionProvider>
           </Card>
 
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -276,6 +293,7 @@ export default async function AdminBangumiPage({ searchParams }: PageProps) {
               page={pageNumber}
               totalPages={totalPages}
               params={query ? { q: query } : undefined}
+              pageSize={pageSize}
             />
           </div>
         </>

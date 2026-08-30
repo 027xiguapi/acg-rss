@@ -5,7 +5,7 @@ import { Search, Users } from "lucide-react";
 import { db } from "@/db";
 import { subgroups, torrentItems } from "@/db/schema";
 import { formatDateTime } from "@/lib/format";
-import { PAGE_SIZE, parsePage, searchPattern } from "@/lib/pagination";
+import { parsePage, parsePageSize, searchPattern } from "@/lib/pagination";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -24,11 +24,18 @@ import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { SubgroupFormDialog } from "@/components/subgroups/subgroup-form-dialog";
 import { SubgroupRowActions } from "@/components/subgroups/subgroup-row-actions";
+import {
+  BatchDeleteBar,
+  BatchRowCheckbox,
+  BatchSelectAllCheckbox,
+  BatchSelectionProvider,
+} from "@/components/admin/batch-delete";
+import { batchDeleteSubgroupsAction } from "@/server/subgroups/actions";
 
 export const metadata: Metadata = { title: "Subgroups" };
 
 interface PageProps {
-  searchParams: Promise<{ q?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; page?: string; pageSize?: string }>;
 }
 
 /**
@@ -41,9 +48,10 @@ export default async function AdminSubgroupsPage({ searchParams }: PageProps) {
   const t = await getTranslations("admin");
   const tCommon = await getTranslations("common");
 
-  const { q, page } = await searchParams;
+  const { q, page, pageSize: pageSizeParam } = await searchParams;
   const query = (q ?? "").trim();
   const pageNumber = parsePage(page);
+  const pageSize = parsePageSize(pageSizeParam);
 
   const where = query
     ? or(
@@ -56,15 +64,15 @@ export default async function AdminSubgroupsPage({ searchParams }: PageProps) {
     .select({ count: sql<number>`count(*)::int` })
     .from(subgroups)
     .where(where);
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   const rows = await db
     .select()
     .from(subgroups)
     .where(where)
     .orderBy(subgroups.name)
-    .limit(PAGE_SIZE)
-    .offset((pageNumber - 1) * PAGE_SIZE);
+    .limit(pageSize)
+    .offset((pageNumber - 1) * pageSize);
 
   const ids = rows.map((r) => r.id);
   const torrentStats = ids.length
@@ -87,8 +95,8 @@ export default async function AdminSubgroupsPage({ searchParams }: PageProps) {
     torrentStats.map((s) => [s.subgroupId, s.count] as const)
   );
 
-  const start = total === 0 ? 0 : (pageNumber - 1) * PAGE_SIZE + 1;
-  const end = Math.min(total, pageNumber * PAGE_SIZE);
+  const start = total === 0 ? 0 : (pageNumber - 1) * pageSize + 1;
+  const end = Math.min(total, pageNumber * pageSize);
 
   return (
     <div className="flex flex-col gap-6">
@@ -128,42 +136,51 @@ export default async function AdminSubgroupsPage({ searchParams }: PageProps) {
       ) : (
         <>
           <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{tCommon("name")}</TableHead>
-                    <TableHead>{tCommon("category")}</TableHead>
-                    <TableHead>{t("subgroupTorrents")}</TableHead>
-                    <TableHead>{tCommon("createdAt")}</TableHead>
-                    <TableHead className="text-right">{tCommon("actions")}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {rows.map((subgroup) => (
-                    <TableRow key={subgroup.id}>
-                      <TableCell className="font-medium">{subgroup.name}</TableCell>
-                      <TableCell>
-                        {subgroup.category ? (
-                          <Badge variant="outline">{subgroup.category}</Badge>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {countMap.get(subgroup.id) ?? 0}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
-                        {formatDateTime(subgroup.createdAt, locale)}
-                      </TableCell>
-                      <TableCell>
-                        <SubgroupRowActions subgroup={subgroup} />
-                      </TableCell>
+            <BatchSelectionProvider>
+              <BatchDeleteBar action={batchDeleteSubgroupsAction} />
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-10">
+                        <BatchSelectAllCheckbox ids={rows.map((r) => r.id)} />
+                      </TableHead>
+                      <TableHead>{tCommon("name")}</TableHead>
+                      <TableHead>{tCommon("category")}</TableHead>
+                      <TableHead>{t("subgroupTorrents")}</TableHead>
+                      <TableHead>{tCommon("createdAt")}</TableHead>
+                      <TableHead className="text-right">{tCommon("actions")}</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
+                  </TableHeader>
+                  <TableBody>
+                    {rows.map((subgroup) => (
+                      <TableRow key={subgroup.id}>
+                        <TableCell>
+                          <BatchRowCheckbox id={subgroup.id} />
+                        </TableCell>
+                        <TableCell className="font-medium">{subgroup.name}</TableCell>
+                        <TableCell>
+                          {subgroup.category ? (
+                            <Badge variant="outline">{subgroup.category}</Badge>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {countMap.get(subgroup.id) ?? 0}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                          {formatDateTime(subgroup.createdAt, locale)}
+                        </TableCell>
+                        <TableCell>
+                          <SubgroupRowActions subgroup={subgroup} />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </BatchSelectionProvider>
           </Card>
 
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -175,6 +192,7 @@ export default async function AdminSubgroupsPage({ searchParams }: PageProps) {
               page={pageNumber}
               totalPages={totalPages}
               params={query ? { q: query } : undefined}
+              pageSize={pageSize}
             />
           </div>
         </>

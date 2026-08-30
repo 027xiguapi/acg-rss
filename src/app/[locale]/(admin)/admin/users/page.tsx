@@ -5,7 +5,7 @@ import { Search, UserCog, Users } from "lucide-react";
 import { db } from "@/db";
 import { accounts, bangumi, users } from "@/db/schema";
 import { formatDateTime } from "@/lib/format";
-import { PAGE_SIZE, parsePage, searchPattern } from "@/lib/pagination";
+import { parsePage, parsePageSize, searchPattern } from "@/lib/pagination";
 import { getSessionUser } from "@/server/auth/session";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -25,11 +25,18 @@ import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { UserFormDialog } from "@/components/admin/users/user-form-dialog";
 import { DeleteUserButton } from "@/components/admin/users/delete-user-button";
+import {
+  BatchDeleteBar,
+  BatchRowCheckbox,
+  BatchSelectAllCheckbox,
+  BatchSelectionProvider,
+} from "@/components/admin/batch-delete";
+import { batchDeleteUsersAction } from "@/server/users/actions";
 
 export const metadata: Metadata = { title: "User Management" };
 
 interface PageProps {
-  searchParams: Promise<{ q?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; page?: string; pageSize?: string }>;
 }
 
 /**
@@ -40,9 +47,10 @@ interface PageProps {
  * remaining admin. Search matches username, email or display name.
  */
 export default async function AdminUsersPage({ searchParams }: PageProps) {
-  const { q, page } = await searchParams;
+  const { q, page, pageSize: pageSizeParam } = await searchParams;
   const query = (q ?? "").trim();
   const pageNumber = parsePage(page);
+  const pageSize = parsePageSize(pageSizeParam);
 
   const where = query
     ? or(
@@ -56,15 +64,15 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
     .select({ count: sql<number>`count(*)::int` })
     .from(users)
     .where(where);
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   const rows = await db
     .select()
     .from(users)
     .where(where)
     .orderBy(asc(users.id))
-    .limit(PAGE_SIZE)
-    .offset((pageNumber - 1) * PAGE_SIZE);
+    .limit(pageSize)
+    .offset((pageNumber - 1) * pageSize);
 
   const ids = rows.map((r) => r.id);
   const [accountRows, bangumiCounts, adminCountRows, viewer, locale] =
@@ -104,8 +112,16 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
   );
   const singleAdmin = (adminCountRows[0]?.count ?? 0) <= 1;
 
-  const start = total === 0 ? 0 : (pageNumber - 1) * PAGE_SIZE + 1;
-  const end = Math.min(total, pageNumber * PAGE_SIZE);
+  // Rows the batch delete may act on: never the caller, never the last admin.
+  const deletableIds = rows
+    .filter(
+      (row) =>
+        row.id !== viewer?.id && !(singleAdmin && row.role === "admin")
+    )
+    .map((row) => row.id);
+
+  const start = total === 0 ? 0 : (pageNumber - 1) * pageSize + 1;
+  const end = Math.min(total, pageNumber * pageSize);
 
   return (
     <div className="flex flex-col gap-6">
@@ -140,11 +156,16 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
       ) : (
         <>
           <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t("users.username")}</TableHead>
+            <BatchSelectionProvider>
+              <BatchDeleteBar action={batchDeleteUsersAction} />
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-10">
+                        <BatchSelectAllCheckbox ids={deletableIds} />
+                      </TableHead>
+                      <TableHead>{t("users.username")}</TableHead>
                     <TableHead>{t("users.displayName")}</TableHead>
                     <TableHead>{t("users.email")}</TableHead>
                     <TableHead>{t("users.role")}</TableHead>
@@ -161,6 +182,12 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
                       isSelf || (singleAdmin && row.role === "admin");
                     return (
                       <TableRow key={row.id}>
+                        <TableCell>
+                          <BatchRowCheckbox
+                            id={row.id}
+                            disabled={protectedRow}
+                          />
+                        </TableCell>
                         <TableCell className="font-medium">
                           {row.username}
                           {isSelf ? (
@@ -203,6 +230,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
                 </TableBody>
               </Table>
             </CardContent>
+            </BatchSelectionProvider>
           </Card>
 
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -214,6 +242,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
               page={pageNumber}
               totalPages={totalPages}
               params={query ? { q: query } : undefined}
+              pageSize={pageSize}
             />
           </div>
         </>

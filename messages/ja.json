@@ -62,7 +62,10 @@
     "theme": "テーマ",
     "light": "ライト",
     "dark": "ダーク",
-    "system": "システム"
+    "system": "システム",
+    "batchDelete": "選択項目を削除",
+    "batchDeleteWithCount": "選択を削除（{count}）",
+    "confirmBatchDelete": "選択した {count} 件を削除しますか？元に戻せません。"
   },
   "nav": {
     "bangumi": "番組",

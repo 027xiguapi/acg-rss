@@ -19,7 +19,7 @@ import {
   torrentItems,
 } from "@/db/schema";
 import { formatDateTime } from "@/lib/format";
-import { PAGE_SIZE, parsePage, searchPattern } from "@/lib/pagination";
+import { parsePage, parsePageSize, searchPattern } from "@/lib/pagination";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
@@ -40,11 +40,18 @@ import {
   type BangumiOption,
 } from "@/components/bangumi/episode-form-dialog";
 import { DeleteEpisodeButton } from "@/components/bangumi/episode-row-actions";
+import {
+  BatchDeleteBar,
+  BatchRowCheckbox,
+  BatchSelectAllCheckbox,
+  BatchSelectionProvider,
+} from "@/components/admin/batch-delete";
+import { batchDeleteEpisodesAction } from "@/server/bangumi/actions";
 
 export const metadata: Metadata = { title: "Episode Management" };
 
 interface PageProps {
-  searchParams: Promise<{ q?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; page?: string; pageSize?: string }>;
 }
 
 /**
@@ -59,9 +66,10 @@ export default async function AdminEpisodesPage({ searchParams }: PageProps) {
   const tBangumi = await getTranslations("bangumi");
   const tCommon = await getTranslations("common");
 
-  const { q, page } = await searchParams;
+  const { q, page, pageSize: pageSizeParam } = await searchParams;
   const query = (q ?? "").trim();
   const pageNumber = parsePage(page);
+  const pageSize = parsePageSize(pageSizeParam);
 
   // Free-text matches the series name; a purely numeric query also matches
   // the episode number exactly.
@@ -82,7 +90,7 @@ export default async function AdminEpisodesPage({ searchParams }: PageProps) {
       and(eq(bangumiInfos.bangumiId, bangumi.id), eq(bangumiInfos.kind, "primary"))
     )
     .where(where);
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   const rows = await db
     .select({ episode: bangumiEpisodes, seriesTitle: bangumiInfos.title })
@@ -94,8 +102,8 @@ export default async function AdminEpisodesPage({ searchParams }: PageProps) {
     )
     .where(where)
     .orderBy(asc(bangumiInfos.title), asc(bangumiEpisodes.number))
-    .limit(PAGE_SIZE)
-    .offset((pageNumber - 1) * PAGE_SIZE);
+    .limit(pageSize)
+    .offset((pageNumber - 1) * pageSize);
 
   const ids = rows.map((r) => r.episode.id);
   const torrentStats = ids.length
@@ -119,8 +127,8 @@ export default async function AdminEpisodesPage({ searchParams }: PageProps) {
     .where(eq(bangumiInfos.kind, "primary"))
     .orderBy(asc(bangumiInfos.title));
 
-  const start = total === 0 ? 0 : (pageNumber - 1) * PAGE_SIZE + 1;
-  const end = Math.min(total, pageNumber * PAGE_SIZE);
+  const start = total === 0 ? 0 : (pageNumber - 1) * pageSize + 1;
+  const end = Math.min(total, pageNumber * pageSize);
 
   return (
     <div className="flex flex-col gap-6">
@@ -160,21 +168,29 @@ export default async function AdminEpisodesPage({ searchParams }: PageProps) {
       ) : (
         <>
           <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t("seriesColumn")}</TableHead>
-                    <TableHead>{t("episodeColumn")}</TableHead>
-                    <TableHead>{t("torrentsColumn")}</TableHead>
-                    <TableHead>{t("updatedAt")}</TableHead>
-                    <TableHead className="text-right">{tCommon("actions")}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {rows.map(({ episode, seriesTitle }) => (
-                    <TableRow key={episode.id}>
-                      <TableCell>
+            <BatchSelectionProvider>
+              <BatchDeleteBar action={batchDeleteEpisodesAction} />
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-10">
+                        <BatchSelectAllCheckbox ids={rows.map((r) => r.episode.id)} />
+                      </TableHead>
+                      <TableHead>{t("seriesColumn")}</TableHead>
+                      <TableHead>{t("episodeColumn")}</TableHead>
+                      <TableHead>{t("torrentsColumn")}</TableHead>
+                      <TableHead>{t("updatedAt")}</TableHead>
+                      <TableHead className="text-right">{tCommon("actions")}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {rows.map(({ episode, seriesTitle }) => (
+                      <TableRow key={episode.id}>
+                        <TableCell>
+                          <BatchRowCheckbox id={episode.id} />
+                        </TableCell>
+                        <TableCell>
                         <Link
                           href={`/bangumi/${episode.bangumiId}`}
                           className="font-medium hover:underline"
@@ -223,6 +239,7 @@ export default async function AdminEpisodesPage({ searchParams }: PageProps) {
                 </TableBody>
               </Table>
             </CardContent>
+            </BatchSelectionProvider>
           </Card>
 
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -234,6 +251,7 @@ export default async function AdminEpisodesPage({ searchParams }: PageProps) {
               page={pageNumber}
               totalPages={totalPages}
               params={query ? { q: query } : undefined}
+              pageSize={pageSize}
             />
           </div>
         </>

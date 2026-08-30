@@ -1,11 +1,12 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/db";
 import { subgroups } from "@/db/schema";
 import { getAdminUser } from "@/server/auth/session";
+import { parseIdList } from "@/lib/form-data";
 
 export interface SubgroupFormState {
   ok?: boolean;
@@ -91,5 +92,19 @@ export async function deleteSubgroupAction(formData: FormData): Promise<void> {
   if (!Number.isInteger(id) || id <= 0) return;
 
   await db.delete(subgroups).where(eq(subgroups.id, id));
+  revalidatePath("/", "layout");
+}
+
+/** Delete every subgroup checked in the admin table (formData ids). */
+export async function batchDeleteSubgroupsAction(
+  formData: FormData
+): Promise<void> {
+  const user = await getAdminUser();
+  if (!user) return;
+
+  const ids = parseIdList(formData);
+  if (ids.length === 0) return;
+
+  await db.delete(subgroups).where(inArray(subgroups.id, ids));
   revalidatePath("/", "layout");
 }

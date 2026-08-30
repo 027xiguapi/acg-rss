@@ -5,7 +5,7 @@ import { Download, Search } from "lucide-react";
 import { db } from "@/db";
 import { bangumiInfos, torrentItems } from "@/db/schema";
 import { formatBytes, formatDateTime } from "@/lib/format";
-import { PAGE_SIZE, parsePage, searchPattern } from "@/lib/pagination";
+import { parsePage, parsePageSize, searchPattern } from "@/lib/pagination";
 import { extractSubgroup } from "@/lib/parser";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
@@ -25,11 +25,18 @@ import { Pagination } from "@/components/admin/pagination";
 import { buttonVariants } from "@/components/ui/button";
 import { TorrentFormDialog } from "@/components/torrents/torrent-form-dialog";
 import { TorrentRowActions } from "@/components/torrents/torrent-row-actions";
+import {
+  BatchDeleteBar,
+  BatchRowCheckbox,
+  BatchSelectAllCheckbox,
+  BatchSelectionProvider,
+} from "@/components/admin/batch-delete";
+import { batchDeleteTorrentsAction } from "@/server/torrents/actions";
 
 export const metadata: Metadata = { title: "Torrents" };
 
 interface PageProps {
-  searchParams: Promise<{ q?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; page?: string; pageSize?: string }>;
 }
 
 /**
@@ -42,9 +49,10 @@ export default async function AdminTorrentsPage({ searchParams }: PageProps) {
   const t = await getTranslations("torrents");
   const tCommon = await getTranslations("common");
 
-  const { q, page } = await searchParams;
+  const { q, page, pageSize: pageSizeParam } = await searchParams;
   const query = (q ?? "").trim();
   const pageNumber = parsePage(page);
+  const pageSize = parsePageSize(pageSizeParam);
 
   const where = query
     ? or(
@@ -59,15 +67,15 @@ export default async function AdminTorrentsPage({ searchParams }: PageProps) {
     .select({ count: sql<number>`count(*)::int` })
     .from(torrentItems)
     .where(where);
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   const rows = await db
     .select()
     .from(torrentItems)
     .where(where)
     .orderBy(desc(torrentItems.createdAt))
-    .limit(PAGE_SIZE)
-    .offset((pageNumber - 1) * PAGE_SIZE);
+    .limit(pageSize)
+    .offset((pageNumber - 1) * pageSize);
 
   // Primary display name of each linked bangumi (targeted, avoids a cross join).
   const linkedIds = rows
@@ -86,8 +94,8 @@ export default async function AdminTorrentsPage({ searchParams }: PageProps) {
     : [];
   const titleMap = new Map(titleRows.map((r) => [r.bangumiId, r.title]));
 
-  const start = total === 0 ? 0 : (pageNumber - 1) * PAGE_SIZE + 1;
-  const end = Math.min(total, pageNumber * PAGE_SIZE);
+  const start = total === 0 ? 0 : (pageNumber - 1) * pageSize + 1;
+  const end = Math.min(total, pageNumber * pageSize);
 
   return (
     <div className="flex flex-col gap-6">
@@ -127,88 +135,97 @@ export default async function AdminTorrentsPage({ searchParams }: PageProps) {
       ) : (
         <>
           <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t("torrentTitle")}</TableHead>
-                    <TableHead>{t("bangumi")}</TableHead>
-                    <TableHead>{t("episode")}</TableHead>
-                    <TableHead>{tCommon("category")}</TableHead>
-                    <TableHead>{tCommon("createdAt")}</TableHead>
-                    <TableHead className="text-right">{tCommon("actions")}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {rows.map((torrent) => {
-                    const subgroup = torrent.subgroup ?? extractSubgroup(torrent.title);
-                    const bangumiTitle =
-                      torrent.bangumiId != null
-                        ? titleMap.get(torrent.bangumiId)
-                        : undefined;
-                    return (
-                      <TableRow key={torrent.id}>
-                        <TableCell>
-                          <div className="flex min-w-0 flex-col gap-1">
-                            <span
-                              className="block max-w-[36rem] truncate font-medium"
-                              title={torrent.title}
-                            >
-                              {torrent.title}
-                            </span>
-                            <div className="flex flex-wrap items-center gap-1">
-                              {subgroup ? (
-                                <Badge variant="outline">{subgroup}</Badge>
-                              ) : null}
-                              {torrent.resolution ? (
-                                <Badge variant="outline">{torrent.resolution}</Badge>
-                              ) : null}
-                              {torrent.size != null ? (
-                                <span className="text-xs text-muted-foreground">
-                                  {formatBytes(torrent.size)}
-                                </span>
-                              ) : null}
+            <BatchSelectionProvider>
+              <BatchDeleteBar action={batchDeleteTorrentsAction} />
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-10">
+                        <BatchSelectAllCheckbox ids={rows.map((r) => r.id)} />
+                      </TableHead>
+                      <TableHead>{t("torrentTitle")}</TableHead>
+                      <TableHead>{t("bangumi")}</TableHead>
+                      <TableHead>{t("episode")}</TableHead>
+                      <TableHead>{tCommon("category")}</TableHead>
+                      <TableHead>{tCommon("createdAt")}</TableHead>
+                      <TableHead className="text-right">{tCommon("actions")}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {rows.map((torrent) => {
+                      const subgroup = torrent.subgroup ?? extractSubgroup(torrent.title);
+                      const bangumiTitle =
+                        torrent.bangumiId != null
+                          ? titleMap.get(torrent.bangumiId)
+                          : undefined;
+                      return (
+                        <TableRow key={torrent.id}>
+                          <TableCell>
+                            <BatchRowCheckbox id={torrent.id} />
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex min-w-0 flex-col gap-1">
+                              <span
+                                className="block max-w-[36rem] truncate font-medium"
+                                title={torrent.title}
+                              >
+                                {torrent.title}
+                              </span>
+                              <div className="flex flex-wrap items-center gap-1">
+                                {subgroup ? (
+                                  <Badge variant="outline">{subgroup}</Badge>
+                                ) : null}
+                                {torrent.resolution ? (
+                                  <Badge variant="outline">{torrent.resolution}</Badge>
+                                ) : null}
+                                {torrent.size != null ? (
+                                  <span className="text-xs text-muted-foreground">
+                                    {formatBytes(torrent.size)}
+                                  </span>
+                                ) : null}
+                              </div>
                             </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {torrent.bangumiId != null && bangumiTitle ? (
-                            <Link
-                              href={`/bangumi/${torrent.bangumiId}`}
-                              className="font-medium hover:underline"
-                            >
-                              {bangumiTitle}
-                            </Link>
-                          ) : (
-                            <Badge variant="secondary">{t("unmatched")}</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {torrent.episode != null ? `#${torrent.episode}` : "—"}
-                        </TableCell>
-                        <TableCell>
-                          {torrent.category ? (
-                            <Badge variant="outline">{torrent.category}</Badge>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
-                          {formatDateTime(torrent.publishTime ?? torrent.createdAt, locale)}
-                        </TableCell>
-                        <TableCell>
-                          <TorrentRowActions
-                            torrent={torrent}
-                            magnet={torrent.magnet}
-                            torrentUrl={torrent.torrentUrl}
-                          />
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </CardContent>
+                          </TableCell>
+                          <TableCell>
+                            {torrent.bangumiId != null && bangumiTitle ? (
+                              <Link
+                                href={`/bangumi/${torrent.bangumiId}`}
+                                className="font-medium hover:underline"
+                              >
+                                {bangumiTitle}
+                              </Link>
+                            ) : (
+                              <Badge variant="secondary">{t("unmatched")}</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {torrent.episode != null ? `#${torrent.episode}` : "—"}
+                          </TableCell>
+                          <TableCell>
+                            {torrent.category ? (
+                              <Badge variant="outline">{torrent.category}</Badge>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                            {formatDateTime(torrent.publishTime ?? torrent.createdAt, locale)}
+                          </TableCell>
+                          <TableCell>
+                            <TorrentRowActions
+                              torrent={torrent}
+                              magnet={torrent.magnet}
+                              torrentUrl={torrent.torrentUrl}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </BatchSelectionProvider>
           </Card>
 
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -220,6 +237,7 @@ export default async function AdminTorrentsPage({ searchParams }: PageProps) {
               page={pageNumber}
               totalPages={totalPages}
               params={query ? { q: query } : undefined}
+              pageSize={pageSize}
             />
           </div>
         </>

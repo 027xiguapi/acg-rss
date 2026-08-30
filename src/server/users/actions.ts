@@ -1,12 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, eq, ne, sql } from "drizzle-orm";
+import { and, eq, inArray, ne, notInArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { getAdminUser } from "@/server/auth/session";
 import { hashPassword } from "@/server/auth/password";
+import { parseIdList } from "@/lib/form-data";
 
 export interface UserFormState {
   ok?: boolean;
@@ -175,5 +176,43 @@ export async function deleteUserAction(formData: FormData): Promise<void> {
   if ((await adminCountExcluding(id)) === 0) return;
 
   await db.delete(users).where(eq(users.id, id));
+  revalidatePath("/", "layout");
+}
+
+/** Delete every user checked in the admin table (formData ids). Applies the
+ *  same guard rails as the single delete: the caller is never deleted and a
+ *  selection that would leave zero admins is trimmed down to non-admins. */
+export async function batchDeleteUsersAction(
+  formData: FormData
+): Promise<void> {
+  const admin = await getAdminUser();
+  if (!admin) return;
+
+  const ids = parseIdList(formData).filter((id) => id !== admin.id);
+  if (ids.length === 0) return;
+
+  const targets = await db
+    .select({ id: users.id, role: users.role })
+    .from(users)
+    .where(inArray(users.id, ids));
+  if (targets.length === 0) return;
+
+  const adminIds = targets
+    .filter((row) => row.role === "admin")
+    .map((row) => row.id);
+  let deletable = targets.map((row) => row.id);
+  if (adminIds.length > 0) {
+    const [{ count: otherAdmins }] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(users)
+      .where(and(eq(users.role, "admin"), notInArray(users.id, adminIds)));
+    if (otherAdmins === 0) {
+      const keep = new Set(adminIds);
+      deletable = deletable.filter((id) => !keep.has(id));
+    }
+  }
+  if (deletable.length === 0) return;
+
+  await db.delete(users).where(inArray(users.id, deletable));
   revalidatePath("/", "layout");
 }

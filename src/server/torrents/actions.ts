@@ -1,6 +1,6 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/db";
@@ -14,6 +14,7 @@ import {
   parseTorrentTitle,
 } from "@/lib/parser";
 import { resolveOrCreateSubgroupId } from "@/server/subgroups/resolve";
+import { parseIdList } from "@/lib/form-data";
 
 export interface TorrentFormState {
   ok?: boolean;
@@ -205,6 +206,31 @@ export async function deleteTorrentAction(formData: FormData): Promise<void> {
 
   await db.delete(torrentItems).where(eq(torrentItems.id, id));
   if (existing) await cleanupEmptyEpisode(existing.episodeId);
+
+  revalidatePath("/", "layout");
+}
+
+/** Delete every torrent checked in the admin table (formData ids). */
+export async function batchDeleteTorrentsAction(
+  formData: FormData
+): Promise<void> {
+  const user = await getAdminUser();
+  if (!user) return;
+
+  const ids = parseIdList(formData);
+  if (ids.length === 0) return;
+
+  const affected = await db
+    .select({ episodeId: torrentItems.episodeId })
+    .from(torrentItems)
+    .where(inArray(torrentItems.id, ids));
+
+  await db.delete(torrentItems).where(inArray(torrentItems.id, ids));
+  for (const episodeId of new Set(
+    affected.map((row) => row.episodeId).filter((id): id is number => id != null)
+  )) {
+    await cleanupEmptyEpisode(episodeId);
+  }
 
   revalidatePath("/", "layout");
 }
