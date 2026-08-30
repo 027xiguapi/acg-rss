@@ -158,6 +158,24 @@ export async function saveBangumiAction(
   return { ok: true };
 }
 
+/** Inline-update only the weekly air day of one bangumi from the admin table. */
+export async function updateBangumiAirDayAction(formData: FormData): Promise<void> {
+  const user = await getAdminUser();
+  if (!user) return;
+  const id = Number(formData.get("id"));
+  if (!Number.isInteger(id) || id <= 0) return;
+  const rawDay = formData.get("airDay");
+  const day =
+    rawDay === "" || rawDay == null ? null : Number(rawDay);
+  if (day !== null && (!Number.isInteger(day) || day < 1 || day > 7)) return;
+
+  await db
+    .update(bangumi)
+    .set({ airDay: day, updatedBy: user.id })
+    .where(and(eq(bangumi.id, id), eq(bangumi.userId, user.id)));
+  revalidatePath("/", "layout");
+}
+
 export async function deleteBangumiAction(formData: FormData): Promise<void> {
   const user = await getAdminUser();
   if (!user) return;

@@ -23,6 +23,7 @@ import { EmptyState } from "@/components/empty-state";
 import { AdminSearch } from "@/components/admin/admin-search";
 import { Pagination } from "@/components/admin/pagination";
 import { BangumiFormDialog } from "@/components/bangumi/bangumi-form-dialog";
+import { AirDaySelect } from "@/components/bangumi/air-day-select";
 import { DeleteBangumiButton } from "@/components/bangumi/bangumi-row-actions";
 
 export const metadata: Metadata = { title: "Bangumi Management" };
@@ -174,6 +175,7 @@ export default async function AdminBangumiPage({ searchParams }: PageProps) {
                   <TableRow>
                     <TableHead>{tBangumi("bangumiTitle")}</TableHead>
                     <TableHead>{tBangumi("watchStatus")}</TableHead>
+                    <TableHead>{tBangumi("airDay")}</TableHead>
                     <TableHead>{t("episodesColumn")}</TableHead>
                     <TableHead>{t("updatedBy")}</TableHead>
                     <TableHead>{t("updatedAt")}</TableHead>
@@ -205,9 +207,6 @@ export default async function AdminBangumiPage({ searchParams }: PageProps) {
                             {item.origin ? (
                               <Badge variant="outline">{tBangumi(`origins.${item.origin}`)}</Badge>
                             ) : null}
-                            {item.airDay ? (
-                              <Badge variant="outline">{tBangumi(`weekdays.${item.airDay}`)}</Badge>
-                            ) : null}
                           </div>
                         </div>
                       </TableCell>
@@ -223,6 +222,9 @@ export default async function AdminBangumiPage({ searchParams }: PageProps) {
                         >
                           {tBangumi(`status.${item.watchStatus}`)}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <AirDaySelect bangumiId={item.id} airDay={item.airDay} />
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-sm">
                         {tBangumi("episodeCount", { count: episodeMap.get(item.id) ?? 0 })}
