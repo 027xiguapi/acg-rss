@@ -108,7 +108,11 @@
     "empty": "No bangumi tracked yet.",
     "allYears": "All years",
     "clearFilter": "Clear filter",
-    "latest": "Ep {episode}"
+    "latest": "Ep {episode}",
+    "recent": "Recent updates",
+    "favorites": "My favorites",
+    "favoritesEmpty": "No favorites yet.",
+    "favoritesLogin": "Sign in to see your favorites."
   },
   "auth": {
     "loginTitle": "Welcome back",

@@ -108,7 +108,11 @@
     "empty": "还没有追踪的番组。",
     "allYears": "全部年份",
     "clearFilter": "清除筛选",
-    "latest": "更新至 {episode} 话"
+    "latest": "更新至 {episode} 话",
+    "recent": "最近更新",
+    "favorites": "我的收藏",
+    "favoritesEmpty": "还没有收藏番组。",
+    "favoritesLogin": "登录后查看你的收藏。"
   },
   "auth": {
     "loginTitle": "欢迎回来",

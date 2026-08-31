@@ -108,7 +108,11 @@
     "empty": "フォロー中の番組はまだありません。",
     "allYears": "すべての年",
     "clearFilter": "絞り込みをクリア",
-    "latest": "第 {episode} 話まで"
+    "latest": "第 {episode} 話まで",
+    "recent": "最近の更新",
+    "favorites": "お気に入り",
+    "favoritesEmpty": "お気に入りはまだありません。",
+    "favoritesLogin": "ログインしてお気に入りを確認。"
   },
   "auth": {
     "loginTitle": "おかえりなさい",

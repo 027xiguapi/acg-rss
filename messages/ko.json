@@ -108,7 +108,11 @@
     "empty": "아직 팔로우 중인 방구미이 없습니다.",
     "allYears": "전체 연도",
     "clearFilter": "필터 지우기",
-    "latest": "{episode}화까지"
+    "latest": "{episode}화까지",
+    "recent": "최근 업데이트",
+    "favorites": "내 즐겨찾기",
+    "favoritesEmpty": "아직 즐겨찾기가 없습니다.",
+    "favoritesLogin": "로그인하면 즐겨찾기를 볼 수 있습니다."
   },
   "auth": {
     "loginTitle": "다시 오신 것을 환영합니다",

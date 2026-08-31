@@ -1,9 +1,11 @@
-import { eq, max } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, max, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   bangumi,
   bangumiEpisodes,
+  bangumiFavorites,
   bangumiInfos,
+  torrentItems,
   type Bangumi,
   type BangumiWithTitle,
 } from "@/db/schema";
@@ -125,4 +127,74 @@ export async function getBangumiIndex(
     unscheduled,
     years,
   };
+}
+
+/** Load bangumi cards for a set of ids, preserving the caller's order. */
+async function loadCardEntries(ids: number[]): Promise<BangumiCardData[]> {
+  if (ids.length === 0) return [];
+  const [rows, episodeStats, titleRows] = await Promise.all([
+    db.select().from(bangumi).where(inArray(bangumi.id, ids)),
+    db
+      .select({
+        bangumiId: bangumiEpisodes.bangumiId,
+        latest: max(bangumiEpisodes.number),
+      })
+      .from(bangumiEpisodes)
+      .where(inArray(bangumiEpisodes.bangumiId, ids))
+      .groupBy(bangumiEpisodes.bangumiId),
+    db
+      .select({ bangumiId: bangumiInfos.bangumiId, title: bangumiInfos.title })
+      .from(bangumiInfos)
+      .where(
+        and(
+          inArray(bangumiInfos.bangumiId, ids),
+          eq(bangumiInfos.kind, "primary")
+        )
+      ),
+  ]);
+  const titleMap = new Map(titleRows.map((r) => [r.bangumiId, r.title]));
+  const latestMap = new Map(episodeStats.map((s) => [s.bangumiId, s.latest]));
+  const bangumiMap = new Map(rows.map((r) => [r.id, r]));
+  return ids
+    .map((id) => {
+      const item = bangumiMap.get(id);
+      if (!item) return null;
+      return {
+        item: { ...item, title: titleMap.get(id) ?? "" },
+        latest: latestMap.get(id) ?? null,
+      };
+    })
+    .filter((e): e is BangumiCardData => e != null);
+}
+
+/** Newest releases first: bangumi ordered by their latest torrent time. */
+export async function getRecentBangumi(limit = 12): Promise<BangumiCardData[]> {
+  const recentRows = await db
+    .select({ bangumiId: torrentItems.bangumiId })
+    .from(torrentItems)
+    .where(isNotNull(torrentItems.bangumiId))
+    .groupBy(torrentItems.bangumiId)
+    .orderBy(
+      desc(sql`max(coalesce(${torrentItems.publishTime}, ${torrentItems.createdAt}))`)
+    )
+    .limit(limit);
+  return loadCardEntries(
+    recentRows
+      .map((r) => r.bangumiId)
+      .filter((id): id is number => id != null)
+  );
+}
+
+/** A user's favorited bangumi, newest favorite first. */
+export async function getUserFavorites(
+  userId: number,
+  limit = 12
+): Promise<BangumiCardData[]> {
+  const favoriteRows = await db
+    .select({ bangumiId: bangumiFavorites.bangumiId })
+    .from(bangumiFavorites)
+    .where(eq(bangumiFavorites.userId, userId))
+    .orderBy(desc(bangumiFavorites.createdAt))
+    .limit(limit);
+  return loadCardEntries(favoriteRows.map((r) => r.bangumiId));
 }
