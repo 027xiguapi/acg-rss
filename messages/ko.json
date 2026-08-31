@@ -67,6 +67,15 @@
     "batchDeleteWithCount": "선택 삭제 ({count})",
     "confirmBatchDelete": "선택한 {count}개 항목을 삭제하시겠습니까? 되돌릴 수 없습니다."
   },
+  "profile": {
+    "title": "프로필",
+    "favorites": "구독 중인 작품",
+    "favoritesEmpty": "아직 구독 중인 작품이 없습니다.",
+    "browse": "작품 둘러보기",
+    "roleAdmin": "관리자",
+    "roleUser": "사용자",
+    "joined": "가입일"
+  },
   "nav": {
     "bangumi": "방구미",
     "torrents": "토렌트",
@@ -97,6 +106,8 @@
     "emptyDay": "이 요일에는 업데이트가 없습니다",
     "unscheduled": "방영일 미정",
     "empty": "아직 팔로우 중인 방구미이 없습니다.",
+    "allYears": "전체 연도",
+    "clearFilter": "필터 지우기",
     "latest": "{episode}화까지"
   },
   "auth": {
@@ -130,6 +141,7 @@
   "torrents": {
     "title": "토렌트",
     "subtitle": "인덱스된 모든 토렌트; 관리자는 추가·편집·삭제할 수 있습니다.",
+    "appSubtitle": "인덱스된 모든 토렌트를 표시합니다. 다운로드하거나 링크를 복사할 수 있습니다.",
     "searchPlaceholder": "제목·카테고리·해시 검색…",
     "allBangumi": "전체 작품",
     "bangumi": "작품",

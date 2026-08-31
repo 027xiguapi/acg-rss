@@ -4,23 +4,20 @@ import { Badge } from "@/components/ui/badge";
 import { BangumiCardGrid } from "@/components/home/bangumi-card-grid";
 
 /** Default mode: one section per weekly air day that has entries (Sunday
- *  first), then movie / OVA categories, plus "unscheduled" at the end. Each
- *  section carries a `data-row-N` anchor id that the header DayNav scrolls to
- *  (0=Sun … 6=Sat, 7=movie, 8=OVA, Mikan-style). */
+ *  first), then movie / OVA categories. Unscheduled entries are not shown.
+ *  Each section carries a `data-row-N` anchor id that the header DayNav
+ *  scrolls to (0=Sun … 6=Sat, 7=movie, 8=OVA, Mikan-style). */
 export async function WeeklySchedule({
   daySections,
   movie,
   ova,
-  unscheduled,
 }: {
   daySections: { day: number; entries: BangumiCardData[] }[];
   movie: BangumiCardData[];
   ova: BangumiCardData[];
-  unscheduled: BangumiCardData[];
 }) {
   const tHome = await getTranslations("home");
   const tBangumi = await getTranslations("bangumi");
-  // ISO weekday of today (1=Mon … 7=Sun)
   const todayIso = ((new Date().getDay() + 6) % 7) + 1;
 
   return (
@@ -68,19 +65,6 @@ export async function WeeklySchedule({
             </span>
           </h2>
           <BangumiCardGrid entries={ova} />
-        </section>
-      ) : null}
-
-      {unscheduled.length > 0 ? (
-        <section className="flex flex-col gap-3">
-          <h2 className="flex items-center gap-2 text-base font-semibold">
-            <span className="h-4 w-1 rounded-full bg-muted-foreground" />
-            {tHome("unscheduled")}
-            <span className="text-sm font-normal text-muted-foreground">
-              {unscheduled.length}
-            </span>
-          </h2>
-          <BangumiCardGrid entries={unscheduled} />
         </section>
       ) : null}
     </div>

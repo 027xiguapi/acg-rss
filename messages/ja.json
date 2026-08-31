@@ -67,6 +67,15 @@
     "batchDeleteWithCount": "選択を削除（{count}）",
     "confirmBatchDelete": "選択した {count} 件を削除しますか？元に戻せません。"
   },
+  "profile": {
+    "title": "プロフィール",
+    "favorites": "購読中の作品",
+    "favoritesEmpty": "購読中の作品はまだありません。",
+    "browse": "作品を探す",
+    "roleAdmin": "管理者",
+    "roleUser": "ユーザー",
+    "joined": "登録日"
+  },
   "nav": {
     "bangumi": "番組",
     "torrents": "Torrent",
@@ -97,6 +106,8 @@
     "emptyDay": "この曜日の更新はありません",
     "unscheduled": "放送日未定",
     "empty": "フォロー中の番組はまだありません。",
+    "allYears": "すべての年",
+    "clearFilter": "絞り込みをクリア",
     "latest": "第 {episode} 話まで"
   },
   "auth": {
@@ -130,6 +141,7 @@
   "torrents": {
     "title": "Torrent",
     "subtitle": "インデックス済みのすべての Torrent。管理者は追加・編集・削除できます。",
+    "appSubtitle": "インデックス済みのすべての Torrent。ダウンロードとリンクのコピーができます。",
     "searchPlaceholder": "タイトル・カテゴリ・ハッシュを検索…",
     "allBangumi": "すべての作品",
     "bangumi": "作品",

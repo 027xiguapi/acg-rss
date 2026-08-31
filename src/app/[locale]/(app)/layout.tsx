@@ -13,6 +13,11 @@ export default async function AppLayout({
   const user = await getSessionUser();
 
   return (
-    <AppShell username={user?.username ?? null}>{children}</AppShell>
+    <AppShell
+      username={user?.name ?? user?.username ?? user?.email ?? null}
+      userId={user?.id ?? null}
+    >
+      {children}
+    </AppShell>
   );
 }

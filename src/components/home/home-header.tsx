@@ -8,14 +8,19 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { YearFilter } from "@/components/home/year-filter";
 
 /** Sticky index header: brand, title search, locale/theme switch and auth. */
 export async function HomeHeader({
   user,
   query,
+  year,
+  years,
 }: {
   user: User | null;
   query: string;
+  year: number | null;
+  years: number[];
 }) {
   const tHome = await getTranslations("home");
   const tCommon = await getTranslations("common");
@@ -34,6 +39,7 @@ export async function HomeHeader({
         </Link>
 
         <form method="get" className="relative mx-auto w-full max-w-md flex-1">
+          {year != null ? <input type="hidden" name="year" value={year} /> : null}
           <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
@@ -44,6 +50,13 @@ export async function HomeHeader({
             className="h-9 pl-8"
           />
         </form>
+
+        <YearFilter
+          years={years}
+          selected={year}
+          query={query}
+          allLabel={tHome("allYears")}
+        />
 
         <div className="flex shrink-0 items-center gap-2">
           <div className="hidden items-center gap-2 sm:flex">

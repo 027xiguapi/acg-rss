@@ -24,6 +24,8 @@ export type BangumiIndex = {
   ova: BangumiCardData[];
   /** Bangumi without a valid weekly air day. */
   unscheduled: BangumiCardData[];
+  /** Distinct air years present across all tracked bangumi, newest first. */
+  years: number[];
 };
 
 /** Primary display names of every bangumi (kind=primary in bangumi_infos). */
@@ -45,7 +47,10 @@ export async function withTitles(rows: Bangumi[]): Promise<BangumiWithTitle[]> {
 
 /** Load the public index: tracked bangumi with episode stats, optionally
  * filtered by a title/synonym search and grouped by weekly air day. */
-export async function getBangumiIndex(query: string): Promise<BangumiIndex> {
+export async function getBangumiIndex(
+  query: string,
+  year?: number | null
+): Promise<BangumiIndex> {
   const [rows, episodeStats, nameRows] = await Promise.all([
     db.select().from(bangumi),
     db
@@ -68,8 +73,13 @@ export async function getBangumiIndex(query: string): Promise<BangumiIndex> {
     latest: latestMap.get(item.id) ?? null,
   });
 
-  // Search matches the primary title and all synonym names
-  let visible = decorated;
+  // Distinct air years for the year filter, newest first
+  const years = [
+    ...new Set(rows.map((r) => r.year).filter((y): y is number => y != null)),
+  ].sort((a, b) => b - a);
+
+  // The year filter narrows the set before the text search
+  let visible = year != null ? decorated.filter((r) => r.year === year) : decorated;
   if (query) {
     const needle = query.toLowerCase();
     const synonymHit = new Set<number>();
@@ -113,5 +123,6 @@ export async function getBangumiIndex(query: string): Promise<BangumiIndex> {
     movie,
     ova,
     unscheduled,
+    years,
   };
 }

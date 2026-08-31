@@ -67,6 +67,15 @@
     "batchDeleteWithCount": "删除选中（{count}）",
     "confirmBatchDelete": "确定删除选中的 {count} 项吗？此操作不可恢复。"
   },
+  "profile": {
+    "title": "个人中心",
+    "favorites": "订阅的番组",
+    "favoritesEmpty": "还没有订阅任何番组。",
+    "browse": "去逛逛",
+    "roleAdmin": "管理员",
+    "roleUser": "用户",
+    "joined": "加入于"
+  },
   "nav": {
     "bangumi": "番组",
     "torrents": "资源",
@@ -97,6 +106,8 @@
     "emptyDay": "这一天还没有更新",
     "unscheduled": "更新时间未定",
     "empty": "还没有追踪的番组。",
+    "allYears": "全部年份",
+    "clearFilter": "清除筛选",
     "latest": "更新至 {episode} 话"
   },
   "auth": {
@@ -130,6 +141,7 @@
   "torrents": {
     "title": "资源",
     "subtitle": "已索引的全部种子；管理员可手动添加、编辑和删除。",
+    "appSubtitle": "已索引的全部种子，可直接下载或复制链接。",
     "searchPlaceholder": "搜索标题、分类、哈希…",
     "allBangumi": "全部作品",
     "bangumi": "作品",

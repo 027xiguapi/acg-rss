@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Magnet, Tv } from "lucide-react";
+import { Download, Magnet, Tv } from "lucide-react";
 import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { logoutAction } from "@/server/auth/actions";
 
 const PUBLIC_NAV = [
   { href: "/bangumi", icon: Tv, key: "bangumi" },
+  { href: "/torrents", icon: Download, key: "torrents" },
 ] as const;
 
 function isActive(pathname: string, href: string): boolean {
@@ -21,9 +22,11 @@ function isActive(pathname: string, href: string): boolean {
 /** Top-navbar shell for all public pages: brand / nav / account actions. */
 export function AppShell({
   username,
+  userId,
   children,
 }: {
   username: string | null;
+  userId: number | null;
   children: React.ReactNode;
 }) {
   const t = useTranslations("nav");
@@ -62,9 +65,18 @@ export function AppShell({
           <div className="flex shrink-0 items-center gap-2">
             <LocaleSwitcher />
             <ThemeToggle />
-            {username ? (
+            {username && userId != null ? (
               <>
-                <span className="hidden text-sm font-medium md:inline">{username}</span>
+                <Link
+                  href={`/user/${userId}`}
+                  className="hidden items-center gap-2 text-sm font-medium transition-colors hover:text-primary md:flex"
+                  title={username}
+                >
+                  <span className="flex size-7 items-center justify-center rounded-full bg-secondary text-xs font-semibold uppercase text-secondary-foreground">
+                    {username.slice(0, 1)}
+                  </span>
+                  <span className="max-w-32 truncate">{username}</span>
+                </Link>
                 <form action={logoutAction}>
                   <Button type="submit" variant="outline" size="sm">
                     {t("logout")}

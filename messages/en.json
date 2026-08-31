@@ -67,6 +67,15 @@
     "batchDeleteWithCount": "Delete ({count})",
     "confirmBatchDelete": "Delete the {count} selected item(s)? This cannot be undone."
   },
+  "profile": {
+    "title": "Profile",
+    "favorites": "Subscribed series",
+    "favoritesEmpty": "No subscribed series yet.",
+    "browse": "Browse series",
+    "roleAdmin": "Admin",
+    "roleUser": "User",
+    "joined": "Joined"
+  },
   "nav": {
     "bangumi": "Bangumi",
     "torrents": "Torrents",
@@ -97,6 +106,8 @@
     "emptyDay": "Nothing airing on this day",
     "unscheduled": "Unscheduled",
     "empty": "No bangumi tracked yet.",
+    "allYears": "All years",
+    "clearFilter": "Clear filter",
     "latest": "Ep {episode}"
   },
   "auth": {
@@ -130,6 +141,7 @@
   "torrents": {
     "title": "Torrents",
     "subtitle": "Every indexed torrent; admins can add, edit and delete.",
+    "appSubtitle": "Every indexed torrent — download it or copy the link.",
     "searchPlaceholder": "Search title, category, hash…",
     "allBangumi": "All bangumi",
     "bangumi": "Bangumi",
