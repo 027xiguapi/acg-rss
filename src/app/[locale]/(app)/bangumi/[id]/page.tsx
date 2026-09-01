@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { EmptyState } from "@/components/empty-state";
 import { Breadcrumb } from "@/components/breadcrumb";
 import { BangumiHeader } from "@/components/bangumi/detail/bangumi-header";
+import { BangumiFormDialog } from "@/components/bangumi/bangumi-form-dialog";
 import { DetailActions } from "@/components/bangumi/detail/detail-actions";
 import { EpisodePicker } from "@/components/bangumi/detail/episode-picker";
 import { EpisodeSection } from "@/components/bangumi/detail/episode-section";
@@ -70,11 +71,16 @@ export default async function BangumiDetailPage({ params }: PageProps) {
       />
 
       <div className="flex min-w-0 max-w-[1024px] flex-col gap-5">
-        <BangumiHeader
-          item={item}
-          episodeCount={detail.episodes.length}
-          torrentCount={detail.torrentCount}
-        />
+        <div className="flex items-start justify-between gap-3">
+          <BangumiHeader
+            item={item}
+            episodeCount={detail.episodes.length}
+            torrentCount={detail.torrentCount}
+          />
+          {admin ? (
+            <BangumiFormDialog bangumi={item} initialNames={detail.synonyms} />
+          ) : null}
+        </div>
 
         <section className="flex flex-col gap-2 text-sm leading-relaxed text-muted-foreground">
           <p>{introMeta}</p>
