@@ -253,8 +253,7 @@ export function DayNav({
   ];
 
   return (
-    <nav className="sticky top-14 z-10 border-b bg-background/80 backdrop-blur">
-      {/* Rainbow strip, Mikan-style */}
+    <nav className="sticky top-14 z-10 bg-background/80 backdrop-blur">
       {hasTabs ? (
         <div
           className="h-0.5 w-full"

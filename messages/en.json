@@ -77,12 +77,51 @@
     "joined": "Joined"
   },
   "nav": {
+    "home": "Home",
     "bangumi": "Bangumi",
     "torrents": "Torrents",
     "login": "Sign in",
     "register": "Sign up",
     "logout": "Sign out",
     "backToSite": "Site"
+  },
+  "footer": {
+    "privacy": "Privacy Policy",
+    "contact": "Contact Us",
+    "copyright": "© {year} {name}. All rights reserved."
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "updated": "Last updated: September 2026",
+    "sections": {
+      "data": {
+        "heading": "Information we collect",
+        "body": "When you register, we collect the basic details you provide — such as your username and email address. We do not actively collect any other personally identifying information."
+      },
+      "use": {
+        "heading": "How we use information",
+        "body": "The information is used only to provide account services and to keep the site running and secure. It is not used for any other purpose."
+      },
+      "storage": {
+        "heading": "Storage and protection",
+        "body": "Your information is stored on our own servers. We take reasonable measures to protect it from unauthorized access, disclosure, or tampering."
+      },
+      "cookies": {
+        "heading": "Cookies and local storage",
+        "body": "The site uses cookies to keep you signed in, and browser local storage to remember interface preferences such as theme and language."
+      },
+      "contact": {
+        "heading": "Contact us",
+        "body": "If you have any questions about this policy, please reach out through the Contact page."
+      }
+    }
+  },
+  "contact": {
+    "title": "Contact Us",
+    "intro": "Questions, suggestions, or feedback? Reach us through the channel below.",
+    "emailLabel": "Email",
+    "email": "support@example.com",
+    "response": "We usually reply within 1–3 business days."
   },
   "landing": {
     "hero": "Bangumi → episode → torrent, neatly organized.",

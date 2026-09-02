@@ -77,12 +77,51 @@
     "joined": "加入于"
   },
   "nav": {
+    "home": "首页",
     "bangumi": "番组",
     "torrents": "资源",
     "login": "登录",
     "register": "注册",
     "logout": "退出登录",
     "backToSite": "前台"
+  },
+  "footer": {
+    "privacy": "隐私条款",
+    "contact": "联系我们",
+    "copyright": "© {year} {name} · 保留所有权利"
+  },
+  "privacy": {
+    "title": "隐私条款",
+    "updated": "最后更新：2026 年 9 月",
+    "sections": {
+      "data": {
+        "heading": "我们收集的信息",
+        "body": "本站在你注册账号时会收集你主动提供的用户名、邮箱等基础信息；此外我们不会主动收集其他个人身份信息。"
+      },
+      "use": {
+        "heading": "信息的使用",
+        "body": "收集的信息仅用于提供账号服务、维护站点正常运行与安全，不会用于任何其他用途。"
+      },
+      "storage": {
+        "heading": "信息的存储与保护",
+        "body": "你的信息存储在自有服务器中，我们采取合理的措施保护其安全，防止未经授权的访问、泄露或篡改。"
+      },
+      "cookies": {
+        "heading": "Cookie 与本地存储",
+        "body": "站点使用 Cookie 保存登录会话，并使用浏览器本地存储记住主题、语言等界面偏好。"
+      },
+      "contact": {
+        "heading": "联系我们",
+        "body": "如对本隐私政策有任何疑问，请通过「联系我们」页面与我们取得联系。"
+      }
+    }
+  },
+  "contact": {
+    "title": "联系我们",
+    "intro": "如有任何问题、建议或反馈，欢迎通过以下方式与我们联系。",
+    "emailLabel": "邮箱",
+    "email": "support@example.com",
+    "response": "我们通常会在 1–3 个工作日内回复。"
   },
   "landing": {
     "hero": "番组 → 集 → 种子，一层不少。",
