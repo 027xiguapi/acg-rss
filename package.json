@@ -14,7 +14,7 @@
     "db:seed": "tsx src/db/seed.ts",
     "db:backfill-episodes": "tsx src/db/backfill-episodes.ts",
     "db:backfill-subgroups": "tsx src/db/backfill-subgroups.ts",
-    "db:import-feed": "tsx src/db/import-feed.ts"
+    "db:fetch-feed": "tsx src/db/fetch-feed.ts"
   },
   "dependencies": {
     "@auth/core": "0.41.3",

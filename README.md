@@ -209,6 +209,7 @@ pnpm dev
 | `pnpm db:studio` | Drizzle Studio（浏览数据） |
 | `pnpm db:seed` | 初始化 demo 用户 |
 | `pnpm db:backfill-episodes` | 旧结构数据回填集表（见下） |
+| `pnpm db:fetch-feed` | 抓取跨作品 RSS 一次（默认 Mikan Classic），新种子自动关联到追番；配合宝塔 / cron 定时调用 |
 | `pnpm lint` | ESLint |
 
 ## 旧数据迁移

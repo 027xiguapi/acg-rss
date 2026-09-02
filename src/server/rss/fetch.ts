@@ -6,8 +6,9 @@ import {
   rssFeeds,
   torrentItems,
   type RssFeed,
+  type TorrentItem,
 } from "@/db/schema";
-import { findOrCreateEpisode } from "@/server/bangumi/linker";
+import { findOrCreateEpisode, linkTorrent } from "@/server/bangumi/linker";
 import { resolveOrCreateSubgroupId } from "@/server/subgroups/resolve";
 import {
   computeInfoHash,
@@ -225,6 +226,48 @@ async function upsertEpisodeInfosForTorrent(
 }
 
 /**
+ * Insert one normalized item as a torrent row, deduplicating on info-hash.
+ * Returns the inserted row, or null when it was already present. The row is
+ * created unlinked (no bangumi/episode) — the caller decides how to link it.
+ */
+async function insertTorrentItem(
+  item: NormalizedItem
+): Promise<TorrentItem | null> {
+  const infoHash = computeInfoHash(item.magnet, item.torrentUrl);
+  const parsed = parseTorrentTitle(item.title);
+  const subgroup = extractSubgroup(item.title);
+  const subgroupId = await resolveOrCreateSubgroupId(subgroup);
+  const subtitleInfo = extractSubtitleInfo(item.title);
+
+  const inserted = await db
+    .insert(torrentItems)
+    .values({
+      title: item.title,
+      description: item.description,
+      magnet: item.magnet,
+      torrentUrl: item.torrentUrl,
+      infoHash,
+      size: item.size,
+      publishTime: item.publishTime,
+      category: item.category,
+      bangumiTitle: parsed.bangumiTitle,
+      season: parsed.season,
+      episode: parsed.episode,
+      resolution: parsed.resolution,
+      subgroup,
+      subgroupId,
+      subtitleLanguages: subtitleInfo.languages.length
+        ? subtitleInfo.languages
+        : null,
+      subtitleFormat: subtitleInfo.format,
+    })
+    .onConflictDoNothing({ target: torrentItems.infoHash })
+    .returning();
+
+  return inserted[0] ?? null;
+}
+
+/**
  * Ingest already-parsed items into one bangumi: insert torrents (dedup by
  * info-hash) and link them to the bangumi/episode. Shared by the URL fetch
  * path and the pasted-XML batch importer.
@@ -237,37 +280,8 @@ export async function ingestItems(
 
   for (const item of items) {
     const infoHash = computeInfoHash(item.magnet, item.torrentUrl);
-    const parsed = parseTorrentTitle(item.title);
-    const subgroup = extractSubgroup(item.title);
-    const subgroupId = await resolveOrCreateSubgroupId(subgroup);
-    const subtitleInfo = extractSubtitleInfo(item.title);
+    const row = await insertTorrentItem(item);
 
-    const inserted = await db
-      .insert(torrentItems)
-      .values({
-        title: item.title,
-        description: item.description,
-        magnet: item.magnet,
-        torrentUrl: item.torrentUrl,
-        infoHash,
-        size: item.size,
-        publishTime: item.publishTime,
-        category: item.category,
-        bangumiTitle: parsed.bangumiTitle,
-        season: parsed.season,
-        episode: parsed.episode,
-        resolution: parsed.resolution,
-        subgroup,
-        subgroupId,
-        subtitleLanguages: subtitleInfo.languages.length
-          ? subtitleInfo.languages
-          : null,
-        subtitleFormat: subtitleInfo.format,
-      })
-      .onConflictDoNothing({ target: torrentItems.infoHash })
-      .returning();
-
-    const row = inserted[0];
     if (row) result.created += 1;
     else {
       // Already ingested before — refresh its link to this bangumi and
@@ -305,6 +319,35 @@ export async function ingestItems(
         .update(torrentItems)
         .set({ bangumiId })
         .where(eq(torrentItems.id, row.id));
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Ingest already-parsed items from a cross-series feed (e.g. Mikan's global
+ * "Classic" list). Each torrent is inserted unlinked and then passed to the
+ * linker, which attaches it to a tracked bangumi when its title matches.
+ * Items that match nothing stay unlinked for later backfill.
+ */
+export async function ingestGlobalItems(
+  items: NormalizedItem[]
+): Promise<FeedFetchResult> {
+  const result: FeedFetchResult = { created: 0, skipped: 0 };
+
+  for (const item of items) {
+    const row = await insertTorrentItem(item);
+    if (!row) {
+      result.skipped += 1;
+      continue;
+    }
+    result.created += 1;
+
+    try {
+      await linkTorrent(row);
+    } catch (err) {
+      console.error(`[rss] linker failed for #${row.id}:`, err);
     }
   }
 
