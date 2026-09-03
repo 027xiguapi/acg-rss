@@ -10,5 +10,5 @@ export const config = {
   // - /api
   // - /_next, /_vercel
   // - files with an extension (e.g. favicon.ico)
-  matcher: ["/((?!api|rss|_next|_vercel|.*\\..*).*)"],
+  matcher: ["/((?!api|rss|images|_next|_vercel|.*\\..*).*)"],
 };
