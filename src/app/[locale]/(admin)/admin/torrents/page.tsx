@@ -25,6 +25,7 @@ import { Pagination } from "@/components/admin/pagination";
 import { buttonVariants } from "@/components/ui/button";
 import { TorrentFormDialog } from "@/components/torrents/torrent-form-dialog";
 import { TorrentRowActions } from "@/components/torrents/torrent-row-actions";
+import { BangumiLinkCombobox } from "@/components/torrents/bangumi-link-combobox";
 import {
   BatchDeleteBar,
   BatchRowCheckbox,
@@ -196,7 +197,7 @@ export default async function AdminTorrentsPage({ searchParams }: PageProps) {
                                 {bangumiTitle}
                               </Link>
                             ) : (
-                              <Badge variant="secondary">{t("unmatched")}</Badge>
+                              <BangumiLinkCombobox torrentId={torrent.id} />
                             )}
                           </TableCell>
                           <TableCell className="text-sm">

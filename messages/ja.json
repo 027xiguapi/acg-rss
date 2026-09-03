@@ -192,6 +192,8 @@
     "copyMagnet": "マグネットをコピー",
     "copyLink": "リンクをコピー",
     "unmatched": "未紐付け",
+    "linkBangumi": "作品に紐付け",
+    "searchBangumiPlaceholder": "作品を検索…",
     "add": "Torrent を追加",
     "newTorrent": "Torrent を追加",
     "editTorrent": "Torrent を編集",

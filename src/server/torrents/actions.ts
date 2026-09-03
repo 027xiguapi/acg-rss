@@ -1,12 +1,12 @@
 "use server";
 
-import { eq, inArray } from "drizzle-orm";
+import { and, asc, eq, ilike, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/db";
-import { bangumiEpisodes, torrentItems } from "@/db/schema";
+import { bangumi, bangumiInfos, bangumiEpisodes, torrentItems } from "@/db/schema";
 import { getAdminUser } from "@/server/auth/session";
-import { linkTorrent } from "@/server/bangumi/linker";
+import { findOrCreateEpisode, linkTorrent } from "@/server/bangumi/linker";
 import {
   computeInfoHash,
   extractSubgroup,
@@ -15,6 +15,7 @@ import {
 } from "@/lib/parser";
 import { resolveOrCreateSubgroupId } from "@/server/subgroups/resolve";
 import { parseIdList } from "@/lib/form-data";
+import { searchPattern } from "@/lib/pagination";
 
 export interface TorrentFormState {
   ok?: boolean;
@@ -233,4 +234,73 @@ export async function batchDeleteTorrentsAction(
   }
 
   revalidatePath("/", "layout");
+}
+
+/** One selectable bangumi for the manual link dropdown. */
+export interface BangumiSearchResult {
+  id: number;
+  title: string;
+}
+
+/**
+ * Search tracked bangumi by primary title for the manual link dropdown. An
+ * empty query returns the first results alphabetically so the dropdown isn't
+ * blank when opened.
+ */
+export async function searchBangumiAction(
+  query: string
+): Promise<BangumiSearchResult[]> {
+  const user = await getAdminUser();
+  if (!user) return [];
+
+  const rows = await db
+    .select({ id: bangumi.id, title: bangumiInfos.title })
+    .from(bangumi)
+    .innerJoin(bangumiInfos, eq(bangumiInfos.bangumiId, bangumi.id))
+    .where(
+      and(
+        eq(bangumiInfos.kind, "primary"),
+        ilike(bangumiInfos.title, searchPattern(query.trim()))
+      )
+    )
+    .orderBy(asc(bangumiInfos.title))
+    .limit(20);
+
+  return rows;
+}
+
+/**
+ * Manually link an unlinked torrent to a tracked bangumi. When the torrent
+ * carries a parsed episode number, its episode row is attached too.
+ */
+export async function linkTorrentToBangumiAction(
+  torrentId: number,
+  bangumiId: number
+): Promise<{ ok: boolean; error?: string }> {
+  const user = await getAdminUser();
+  if (!user) return { ok: false, error: "notAuthenticated" };
+
+  if (!Number.isInteger(torrentId) || !Number.isInteger(bangumiId)) {
+    return { ok: false, error: "invalid" };
+  }
+
+  const [torrent] = await db
+    .select({ id: torrentItems.id, episode: torrentItems.episode })
+    .from(torrentItems)
+    .where(eq(torrentItems.id, torrentId))
+    .limit(1);
+  if (!torrent) return { ok: false, error: "invalid" };
+
+  const episodeId =
+    torrent.episode != null
+      ? await findOrCreateEpisode(bangumiId, torrent.episode)
+      : null;
+
+  await db
+    .update(torrentItems)
+    .set({ bangumiId, episodeId })
+    .where(eq(torrentItems.id, torrentId));
+
+  revalidatePath("/", "layout");
+  return { ok: true };
 }

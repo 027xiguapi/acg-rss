@@ -14,6 +14,7 @@
     "db:seed": "tsx src/db/seed.ts",
     "db:backfill-episodes": "tsx src/db/backfill-episodes.ts",
     "db:backfill-subgroups": "tsx src/db/backfill-subgroups.ts",
+    "db:backfill-covers": "tsx src/db/backfill-covers.ts",
     "db:fetch-feed": "tsx src/db/fetch-feed.ts"
   },
   "dependencies": {

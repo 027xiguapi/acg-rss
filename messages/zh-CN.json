@@ -192,6 +192,8 @@
     "copyMagnet": "复制磁力链",
     "copyLink": "复制链接",
     "unmatched": "未关联",
+    "linkBangumi": "关联作品",
+    "searchBangumiPlaceholder": "搜索作品…",
     "add": "添加种子",
     "newTorrent": "添加种子",
     "editTorrent": "编辑种子",

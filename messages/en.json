@@ -192,6 +192,8 @@
     "copyMagnet": "Copy magnet",
     "copyLink": "Copy link",
     "unmatched": "Unlinked",
+    "linkBangumi": "Link bangumi",
+    "searchBangumiPlaceholder": "Search bangumi…",
     "add": "Add torrent",
     "newTorrent": "Add a torrent",
     "editTorrent": "Edit torrent",

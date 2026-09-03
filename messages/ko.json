@@ -192,6 +192,8 @@
     "copyMagnet": "마그넷 복사",
     "copyLink": "링크 복사",
     "unmatched": "미연결",
+    "linkBangumi": "작품 연결",
+    "searchBangumiPlaceholder": "작품 검색…",
     "add": "토렌트 추가",
     "newTorrent": "토렌트 추가",
     "editTorrent": "토렌트 편집",
