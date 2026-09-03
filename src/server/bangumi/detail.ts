@@ -34,6 +34,8 @@ export interface BangumiDetail {
   torrentCount: number;
   primaryTitle: string;
   synonyms: string[];
+  /** zh-Hans title, used to resolve the local poster file. */
+  coverName: string | null;
   /** Up to 12 other tracked series, closest type/origin first. */
   related: RelatedEntry[];
   /** Newest downloadable release overall (parsed or not), for the big CTA. */
@@ -154,6 +156,7 @@ export async function loadBangumiDetail(bangumiId: number): Promise<BangumiDetai
     .slice(0, 12);
 
   const primaryTitle = titleRows.find((row) => row.kind === "primary")?.title ?? "";
+  const coverName = titleRows.find((row) => row.lang === "zh-Hans")?.title ?? null;
 
   return {
     item: { ...item, title: primaryTitle },
@@ -165,6 +168,7 @@ export async function loadBangumiDetail(bangumiId: number): Promise<BangumiDetai
     torrentCount,
     primaryTitle,
     synonyms: titleRows.filter((row) => row.kind === "synonym").map((row) => row.title),
+    coverName,
     related,
     bestHref: bestTorrent ? (bestTorrent.magnet ?? bestTorrent.torrentUrl) : null,
   };

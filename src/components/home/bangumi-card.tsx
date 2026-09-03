@@ -3,15 +3,18 @@ import Image from "next/image";
 import { Tv } from "lucide-react";
 import type { BangumiCardData } from "@/server/bangumi/queries";
 import { posterTint } from "@/lib/poster";
+import { resolveCover } from "@/lib/cover";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
 /** Poster-style card: tinted cover with the title, meta badges underneath. */
 export async function BangumiCard({ entry }: { entry: BangumiCardData }) {
-  const { item, latest } = entry;
+  const { item, latest, coverName } = entry;
   const tHome = await getTranslations("home");
   const tBangumi = await getTranslations("bangumi");
+
+  const cover = resolveCover(coverName, item.coverUrl);
 
   return (
     <Link
@@ -22,14 +25,14 @@ export async function BangumiCard({ entry }: { entry: BangumiCardData }) {
       <div
         className={cn(
           "relative aspect-[2/3] overflow-hidden rounded-lg shadow-sm transition-all group-hover:-translate-y-1 group-hover:shadow-lg",
-          item.coverUrl
+          cover
             ? "bg-muted"
             : cn("bg-gradient-to-br", posterTint(item.title))
         )}
       >
-        {item.coverUrl ? (
+        {cover ? (
           <Image
-            src={item.coverUrl}
+            src={cover}
             alt={item.title}
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 20vw, 200px"

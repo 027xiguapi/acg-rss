@@ -70,7 +70,7 @@ export default async function UserPage({ params }: PageProps) {
     .orderBy(desc(bangumiFavorites.createdAt));
 
   const ids = favoriteRows.map((r) => r.bangumiId);
-  const [rows, episodeStats, titleRows] = ids.length
+  const [rows, episodeStats, titleRows, coverRows] = ids.length
     ? await Promise.all([
         db.select().from(bangumi).where(inArray(bangumi.id, ids)),
         db
@@ -90,10 +90,20 @@ export default async function UserPage({ params }: PageProps) {
               eq(bangumiInfos.kind, "primary")
             )
           ),
+        db
+          .select({ bangumiId: bangumiInfos.bangumiId, title: bangumiInfos.title })
+          .from(bangumiInfos)
+          .where(
+            and(
+              inArray(bangumiInfos.bangumiId, ids),
+              eq(bangumiInfos.lang, "zh-Hans")
+            )
+          ),
       ])
-    : [[], [], []];
+    : [[], [], [], []];
 
   const titleMap = new Map(titleRows.map((r) => [r.bangumiId, r.title]));
+  const coverMap = new Map(coverRows.map((r) => [r.bangumiId, r.title]));
   const latestMap = new Map(episodeStats.map((s) => [s.bangumiId, s.latest]));
   const bangumiMap = new Map(rows.map((r) => [r.id, r]));
 
@@ -104,6 +114,7 @@ export default async function UserPage({ params }: PageProps) {
       return {
         item: { ...item, title: titleMap.get(f.bangumiId) ?? "" },
         latest: latestMap.get(f.bangumiId) ?? null,
+        coverName: coverMap.get(f.bangumiId) ?? null,
       };
     })
     .filter((e): e is BangumiCardData => e != null);

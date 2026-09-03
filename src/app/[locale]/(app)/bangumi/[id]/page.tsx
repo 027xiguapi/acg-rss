@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import Image from "next/image";
 import { Tv } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { EmptyState } from "@/components/empty-state";
@@ -14,6 +15,9 @@ import { CommentSection } from "@/components/bangumi/detail/comment-section";
 import { loadBangumi, loadBangumiDetail } from "@/server/bangumi/detail";
 import { loadBangumiSocial } from "@/server/bangumi/social";
 import { getAdminUser, getSessionUser } from "@/server/auth/session";
+import { resolveCover } from "@/lib/cover";
+import { posterTint } from "@/lib/poster";
+import { cn } from "@/lib/utils";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -47,6 +51,7 @@ export default async function BangumiDetailPage({ params }: PageProps) {
   const t = await getTranslations("bangumi");
 
   const hasContent = detail.episodes.length > 0 || detail.unparsed.length > 0;
+  const cover = resolveCover(detail.coverName, item.coverUrl);
 
   const introMeta = t("introMeta", {
     title: item.title,
@@ -82,14 +87,34 @@ export default async function BangumiDetailPage({ params }: PageProps) {
           ) : null}
         </div>
 
-        <section className="flex flex-col gap-2 text-sm leading-relaxed text-muted-foreground">
-          <p>{introMeta}</p>
-          <p>
-            {t("introBody", {
-              episodes: detail.episodes.length,
-              torrents: detail.torrentCount,
-            })}
-          </p>
+        <section className="flex flex-col gap-5 sm:flex-row">
+          <div
+            className={cn(
+              "relative aspect-[2/3] w-full max-w-40 shrink-0 overflow-hidden rounded-lg shadow-sm",
+              cover ? "bg-muted" : cn("bg-gradient-to-br", posterTint(item.title))
+            )}
+          >
+            {cover ? (
+              <Image
+                src={cover}
+                alt={item.title}
+                fill
+                sizes="(max-width: 640px) 160px, 160px"
+                className="object-cover"
+              />
+            ) : (
+              <Tv className="absolute left-1/2 top-1/2 size-12 -translate-x-1/2 -translate-y-1/2 text-white/20" />
+            )}
+          </div>
+          <div className="flex flex-col gap-2 text-sm leading-relaxed text-muted-foreground">
+            <p>{introMeta}</p>
+            <p>
+              {t("introBody", {
+                episodes: detail.episodes.length,
+                torrents: detail.torrentCount,
+              })}
+            </p>
+          </div>
         </section>
 
         <DetailActions
