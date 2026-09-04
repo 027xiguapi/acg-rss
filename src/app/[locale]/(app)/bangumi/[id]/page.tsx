@@ -108,6 +108,9 @@ export default async function BangumiDetailPage({ params }: PageProps) {
           </div>
           <div className="flex flex-col gap-2 text-sm leading-relaxed text-muted-foreground">
             <p>{introMeta}</p>
+            {detail.content ? (
+              <p className="whitespace-pre-line text-foreground">{detail.content}</p>
+            ) : null}
             <p>
               {t("introBody", {
                 episodes: detail.episodes.length,

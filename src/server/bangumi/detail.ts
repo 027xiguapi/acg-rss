@@ -36,6 +36,8 @@ export interface BangumiDetail {
   synonyms: string[];
   /** Primary title, used to resolve the local poster file. */
   coverName: string | null;
+  /** Chinese synopsis (intro) stored on the primary name row. */
+  content: string | null;
   /** Up to 12 other tracked series, closest type/origin first. */
   related: RelatedEntry[];
   /** Newest downloadable release overall (parsed or not), for the big CTA. */
@@ -169,6 +171,7 @@ export async function loadBangumiDetail(bangumiId: number): Promise<BangumiDetai
     primaryTitle,
     synonyms: titleRows.filter((row) => row.kind === "synonym").map((row) => row.title),
     coverName,
+    content: titleRows.find((row) => row.kind === "primary")?.content ?? null,
     related,
     bestHref: bestTorrent ? (bestTorrent.magnet ?? bestTorrent.torrentUrl) : null,
   };
