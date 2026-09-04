@@ -34,7 +34,7 @@ export interface BangumiDetail {
   torrentCount: number;
   primaryTitle: string;
   synonyms: string[];
-  /** zh-Hans title, used to resolve the local poster file. */
+  /** Primary title, used to resolve the local poster file. */
   coverName: string | null;
   /** Up to 12 other tracked series, closest type/origin first. */
   related: RelatedEntry[];
@@ -156,7 +156,7 @@ export async function loadBangumiDetail(bangumiId: number): Promise<BangumiDetai
     .slice(0, 12);
 
   const primaryTitle = titleRows.find((row) => row.kind === "primary")?.title ?? "";
-  const coverName = titleRows.find((row) => row.lang === "zh-Hans")?.title ?? null;
+  const coverName = primaryTitle || null;
 
   return {
     item: { ...item, title: primaryTitle },

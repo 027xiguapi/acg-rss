@@ -7,8 +7,9 @@ import { bangumi, bangumiInfos } from "./schema";
 
 /**
  * Backfill cover URLs from the local poster files in public/images/bangumi.
- * Those files are named after the zh-Hans title (e.g. "葬送的芙莉莲.webp")
- * and are committed to the repo, so they deploy as static assets. In
+ * Those files are named after the primary (display) title, e.g.
+ * "葬送的芙莉莲.webp", and are committed to the repo, so they deploy as
+ * static assets. In
  * production the runtime `existsSync` check in resolveCover can't see them,
  * so we persist the local /images/... path into bangumi.cover_url instead —
  * it is served directly by the CDN/static host. Safe to re-run.
@@ -24,9 +25,9 @@ async function main(): Promise<void> {
   const rows = await db
     .select({ bangumiId: bangumiInfos.bangumiId, title: bangumiInfos.title })
     .from(bangumiInfos)
-    .where(eq(bangumiInfos.lang, "zh-Hans"));
+    .where(eq(bangumiInfos.kind, "primary"));
 
-  // One zh-Hans title per bangumi, last row wins (matches the card query).
+  // One primary title per bangumi, last row wins (matches the card query).
   const byBangumi = new Map<number, string>();
   for (const row of rows) byBangumi.set(row.bangumiId, row.title);
 

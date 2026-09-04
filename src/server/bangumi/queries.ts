@@ -14,7 +14,7 @@ import {
 export type BangumiCardData = {
   item: BangumiWithTitle;
   latest: number | null;
-  /** Chinese (zh-Hans) title used to resolve the local poster filename. */
+  /** Primary title used to resolve the local poster filename. */
   coverName: string | null;
 };
 
@@ -79,15 +79,10 @@ export async function getBangumiIndex(
 
   const decorated = await withTitles(rows);
   const latestMap = new Map(episodeStats.map((s) => [s.bangumiId, s.latest]));
-  // zh-Hans name per bangumi, used to locate the local poster file.
-  const coverMap = new Map<number, string>();
-  for (const row of nameRows) {
-    if (row.lang === "zh-Hans") coverMap.set(row.bangumiId, row.title);
-  }
   const toEntry = (item: BangumiWithTitle): BangumiCardData => ({
     item,
     latest: latestMap.get(item.id) ?? null,
-    coverName: coverMap.get(item.id) ?? null,
+    coverName: item.title || null,
   });
 
   // Distinct air years for the year filter, newest first
@@ -147,7 +142,7 @@ export async function getBangumiIndex(
 /** Load bangumi cards for a set of ids, preserving the caller's order. */
 async function loadCardEntries(ids: number[]): Promise<BangumiCardData[]> {
   if (ids.length === 0) return [];
-  const [rows, episodeStats, titleRows, coverRows] = await Promise.all([
+  const [rows, episodeStats, titleRows] = await Promise.all([
     db.select().from(bangumi).where(inArray(bangumi.id, ids)),
     db
       .select({
@@ -166,18 +161,8 @@ async function loadCardEntries(ids: number[]): Promise<BangumiCardData[]> {
           eq(bangumiInfos.kind, "primary")
         )
       ),
-    db
-      .select({ bangumiId: bangumiInfos.bangumiId, title: bangumiInfos.title })
-      .from(bangumiInfos)
-      .where(
-        and(
-          inArray(bangumiInfos.bangumiId, ids),
-          eq(bangumiInfos.lang, "zh-Hans")
-        )
-      ),
   ]);
   const titleMap = new Map(titleRows.map((r) => [r.bangumiId, r.title]));
-  const coverMap = new Map(coverRows.map((r) => [r.bangumiId, r.title]));
   const latestMap = new Map(episodeStats.map((s) => [s.bangumiId, s.latest]));
   const bangumiMap = new Map(rows.map((r) => [r.id, r]));
   return ids
@@ -187,7 +172,7 @@ async function loadCardEntries(ids: number[]): Promise<BangumiCardData[]> {
       return {
         item: { ...item, title: titleMap.get(id) ?? "" },
         latest: latestMap.get(id) ?? null,
-        coverName: coverMap.get(id) ?? null,
+        coverName: titleMap.get(id) ?? null,
       };
     })
     .filter((e): e is BangumiCardData => e != null);
