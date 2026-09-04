@@ -15,7 +15,8 @@
     "db:backfill-episodes": "tsx src/db/backfill-episodes.ts",
     "db:backfill-subgroups": "tsx src/db/backfill-subgroups.ts",
     "db:backfill-covers": "tsx src/db/backfill-covers.ts",
-    "db:backfill-content": "tsx src/db/backfill-content.ts",
+    "db:import-content": "tsx src/db/import-content.ts",
+    "db:export-names": "tsx src/db/export-names.ts",
     "db:pull-remote": "tsx src/db/pull-remote.ts",
     "db:fetch-feed": "tsx src/db/fetch-feed.ts"
   },
