@@ -16,6 +16,8 @@
     "db:backfill-subgroups": "tsx src/db/backfill-subgroups.ts",
     "db:backfill-covers": "tsx src/db/backfill-covers.ts",
     "db:import-content": "tsx src/db/import-content.ts",
+    "db:import-en-names": "tsx src/db/import-en-names.ts",
+    "db:import-ja-names": "tsx src/db/import-ja-names.ts",
     "db:export-names": "tsx src/db/export-names.ts",
     "db:pull-remote": "tsx src/db/pull-remote.ts",
     "db:fetch-feed": "tsx src/db/fetch-feed.ts"
