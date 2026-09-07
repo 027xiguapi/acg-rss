@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { and, desc, eq, inArray, max } from "drizzle-orm";
+import { and, desc, eq, inArray, max, sql } from "drizzle-orm";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -7,9 +7,11 @@ import { Star, Tv } from "lucide-react";
 import { db } from "@/db";
 import {
   bangumi,
+  bangumiComments,
   bangumiEpisodes,
   bangumiFavorites,
   bangumiInfos,
+  torrentItems,
   users,
 } from "@/db/schema";
 import type { BangumiCardData } from "@/server/bangumi/queries";
@@ -70,7 +72,7 @@ export default async function UserPage({ params }: PageProps) {
     .orderBy(desc(bangumiFavorites.createdAt));
 
   const ids = favoriteRows.map((r) => r.bangumiId);
-  const [rows, episodeStats, titleRows] = ids.length
+  const [rows, episodeStats, titleRows, commentStats, torrentStats] = ids.length
     ? await Promise.all([
         db.select().from(bangumi).where(inArray(bangumi.id, ids)),
         db
@@ -90,11 +92,23 @@ export default async function UserPage({ params }: PageProps) {
               eq(bangumiInfos.kind, "primary")
             )
           ),
+        db
+          .select({ bangumiId: bangumiComments.bangumiId, count: sql<number>`count(*)::int` })
+          .from(bangumiComments)
+          .where(inArray(bangumiComments.bangumiId, ids))
+          .groupBy(bangumiComments.bangumiId),
+        db
+          .select({ bangumiId: torrentItems.bangumiId, count: sql<number>`count(*)::int` })
+          .from(torrentItems)
+          .where(inArray(torrentItems.bangumiId, ids))
+          .groupBy(torrentItems.bangumiId),
       ])
-    : [[], [], []];
+    : [[], [], [], [], []];
 
   const titleMap = new Map(titleRows.map((r) => [r.bangumiId, r.title]));
   const latestMap = new Map(episodeStats.map((s) => [s.bangumiId, s.latest]));
+  const commentMap = new Map(commentStats.map((s) => [s.bangumiId, s.count]));
+  const torrentMap = new Map(torrentStats.map((s) => [s.bangumiId, s.count]));
   const bangumiMap = new Map(rows.map((r) => [r.id, r]));
 
   const entries: BangumiCardData[] = favoriteRows
@@ -105,6 +119,8 @@ export default async function UserPage({ params }: PageProps) {
         item: { ...item, title: titleMap.get(f.bangumiId) ?? "" },
         latest: latestMap.get(f.bangumiId) ?? null,
         coverName: titleMap.get(f.bangumiId) ?? null,
+        commentCount: commentMap.get(f.bangumiId) ?? 0,
+        torrentCount: torrentMap.get(f.bangumiId) ?? 0,
       };
     })
     .filter((e): e is BangumiCardData => e != null);

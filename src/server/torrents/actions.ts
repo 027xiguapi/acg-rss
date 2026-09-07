@@ -1,10 +1,11 @@
 "use server";
 
-import { and, asc, eq, ilike, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/db";
 import { bangumi, bangumiInfos, bangumiEpisodes, torrentItems } from "@/db/schema";
+import type { TorrentItem } from "@/db/schema";
 import { getAdminUser } from "@/server/auth/session";
 import { findOrCreateEpisode, linkTorrent } from "@/server/bangumi/linker";
 import {
@@ -303,4 +304,23 @@ export async function linkTorrentToBangumiAction(
 
   revalidatePath("/", "layout");
   return { ok: true };
+}
+
+/**
+ * Recent torrents linked to one bangumi, newest first. Powers the "subscribe"
+ * dialog on the index cards; torrent metadata is already public so no auth is
+ * required. The limit is clamped to keep the payload small.
+ */
+export async function getBangumiTorrentsAction(
+  bangumiId: number,
+  limit = 20
+): Promise<TorrentItem[]> {
+  if (!Number.isInteger(bangumiId) || bangumiId <= 0) return [];
+  const capped = Math.min(Math.max(Math.trunc(limit), 1), 50);
+  return db
+    .select()
+    .from(torrentItems)
+    .where(eq(torrentItems.bangumiId, bangumiId))
+    .orderBy(desc(torrentItems.publishTime), desc(torrentItems.createdAt))
+    .limit(capped);
 }

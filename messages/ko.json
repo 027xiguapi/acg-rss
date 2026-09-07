@@ -151,7 +151,13 @@
     "recent": "최근 업데이트",
     "favorites": "내 즐겨찾기",
     "favoritesEmpty": "아직 즐겨찾기가 없습니다.",
-    "favoritesLogin": "로그인하면 즐겨찾기를 볼 수 있습니다."
+    "favoritesLogin": "로그인하면 즐겨찾기를 볼 수 있습니다.",
+    "subscribe": "구독",
+    "recentTorrents": "최근 토렌트",
+    "noRecentTorrents": "아직 토렌트가 없습니다",
+    "viewAll": "전체 보기",
+    "commentCount": "댓글 {count}",
+    "updateCount": "업데이트 {count}"
   },
   "auth": {
     "loginTitle": "다시 오신 것을 환영합니다",

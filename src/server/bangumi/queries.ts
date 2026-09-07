@@ -2,6 +2,7 @@ import { and, desc, eq, inArray, isNotNull, max, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   bangumi,
+  bangumiComments,
   bangumiEpisodes,
   bangumiFavorites,
   bangumiInfos,
@@ -16,6 +17,10 @@ export type BangumiCardData = {
   latest: number | null;
   /** Primary title used to resolve the local poster filename. */
   coverName: string | null;
+  /** Number of visitor comments on the bangumi. */
+  commentCount: number;
+  /** Number of torrents (releases) linked to the bangumi. */
+  torrentCount: number;
 };
 
 export type BangumiIndex = {
@@ -58,7 +63,7 @@ export async function getBangumiIndex(
   query: string,
   year?: number | null
 ): Promise<BangumiIndex> {
-  const [rows, episodeStats, nameRows] = await Promise.all([
+  const [rows, episodeStats, nameRows, commentStats, torrentStats] = await Promise.all([
     db.select().from(bangumi),
     db
       .select({
@@ -75,14 +80,27 @@ export async function getBangumiIndex(
         lang: bangumiInfos.lang,
       })
       .from(bangumiInfos),
+    db
+      .select({ bangumiId: bangumiComments.bangumiId, count: sql<number>`count(*)::int` })
+      .from(bangumiComments)
+      .groupBy(bangumiComments.bangumiId),
+    db
+      .select({ bangumiId: torrentItems.bangumiId, count: sql<number>`count(*)::int` })
+      .from(torrentItems)
+      .where(isNotNull(torrentItems.bangumiId))
+      .groupBy(torrentItems.bangumiId),
   ]);
 
   const decorated = await withTitles(rows);
   const latestMap = new Map(episodeStats.map((s) => [s.bangumiId, s.latest]));
+  const commentMap = new Map(commentStats.map((s) => [s.bangumiId, s.count]));
+  const torrentMap = new Map(torrentStats.map((s) => [s.bangumiId, s.count]));
   const toEntry = (item: BangumiWithTitle): BangumiCardData => ({
     item,
     latest: latestMap.get(item.id) ?? null,
     coverName: item.title || null,
+    commentCount: commentMap.get(item.id) ?? 0,
+    torrentCount: torrentMap.get(item.id) ?? 0,
   });
 
   // Distinct air years for the year filter, newest first
@@ -142,7 +160,7 @@ export async function getBangumiIndex(
 /** Load bangumi cards for a set of ids, preserving the caller's order. */
 async function loadCardEntries(ids: number[]): Promise<BangumiCardData[]> {
   if (ids.length === 0) return [];
-  const [rows, episodeStats, titleRows] = await Promise.all([
+  const [rows, episodeStats, titleRows, commentStats, torrentStats] = await Promise.all([
     db.select().from(bangumi).where(inArray(bangumi.id, ids)),
     db
       .select({
@@ -161,9 +179,21 @@ async function loadCardEntries(ids: number[]): Promise<BangumiCardData[]> {
           eq(bangumiInfos.kind, "primary")
         )
       ),
+    db
+      .select({ bangumiId: bangumiComments.bangumiId, count: sql<number>`count(*)::int` })
+      .from(bangumiComments)
+      .where(inArray(bangumiComments.bangumiId, ids))
+      .groupBy(bangumiComments.bangumiId),
+    db
+      .select({ bangumiId: torrentItems.bangumiId, count: sql<number>`count(*)::int` })
+      .from(torrentItems)
+      .where(inArray(torrentItems.bangumiId, ids))
+      .groupBy(torrentItems.bangumiId),
   ]);
   const titleMap = new Map(titleRows.map((r) => [r.bangumiId, r.title]));
   const latestMap = new Map(episodeStats.map((s) => [s.bangumiId, s.latest]));
+  const commentMap = new Map(commentStats.map((s) => [s.bangumiId, s.count]));
+  const torrentMap = new Map(torrentStats.map((s) => [s.bangumiId, s.count]));
   const bangumiMap = new Map(rows.map((r) => [r.id, r]));
   return ids
     .map((id) => {
@@ -173,6 +203,8 @@ async function loadCardEntries(ids: number[]): Promise<BangumiCardData[]> {
         item: { ...item, title: titleMap.get(id) ?? "" },
         latest: latestMap.get(id) ?? null,
         coverName: titleMap.get(id) ?? null,
+        commentCount: commentMap.get(id) ?? 0,
+        torrentCount: torrentMap.get(id) ?? 0,
       };
     })
     .filter((e): e is BangumiCardData => e != null);

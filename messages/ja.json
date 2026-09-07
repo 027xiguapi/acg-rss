@@ -151,7 +151,13 @@
     "recent": "最近の更新",
     "favorites": "お気に入り",
     "favoritesEmpty": "お気に入りはまだありません。",
-    "favoritesLogin": "ログインしてお気に入りを確認。"
+    "favoritesLogin": "ログインしてお気に入りを確認。",
+    "subscribe": "購読",
+    "recentTorrents": "最近の Torrent",
+    "noRecentTorrents": "Torrent はまだありません",
+    "viewAll": "すべて見る",
+    "commentCount": "コメント {count}",
+    "updateCount": "更新 {count}"
   },
   "auth": {
     "loginTitle": "おかえりなさい",

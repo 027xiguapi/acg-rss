@@ -151,7 +151,13 @@
     "recent": "Recent updates",
     "favorites": "My favorites",
     "favoritesEmpty": "No favorites yet.",
-    "favoritesLogin": "Sign in to see your favorites."
+    "favoritesLogin": "Sign in to see your favorites.",
+    "subscribe": "Subscribe",
+    "recentTorrents": "Recent torrents",
+    "noRecentTorrents": "No torrents yet",
+    "viewAll": "View all",
+    "commentCount": "{count} comments",
+    "updateCount": "{count} updates"
   },
   "auth": {
     "loginTitle": "Welcome back",
