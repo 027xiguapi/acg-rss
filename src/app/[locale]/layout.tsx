@@ -38,7 +38,7 @@ export async function generateMetadata({
   return {
     title: {
       default: t("title"),
-      template: `%s · acg-rss`,
+      template: `%s · wami-acg`,
     },
     description: t("description"),
   };

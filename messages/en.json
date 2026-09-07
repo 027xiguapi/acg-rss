@@ -1,10 +1,10 @@
 {
   "Metadata": {
-    "title": "acg-rss — RSS aggregator & download manager",
+    "title": "wami-acg — RSS aggregator & download manager",
     "description": "Aggregate torrent RSS feeds, match them with smart rules, and push downloads to your qBittorrent automatically."
   },
   "common": {
-    "appName": "acg-rss",
+    "appName": "wami-acg",
     "tagline": "RSS aggregator & download manager",
     "save": "Save",
     "create": "Create",
@@ -125,7 +125,7 @@
   },
   "landing": {
     "hero": "Bangumi → episode → torrent, neatly organized.",
-    "subtitle": "acg-rss tracks the series you follow and files every torrent under the right episode automatically.",
+    "subtitle": "wami-acg tracks the series you follow and files every torrent under the right episode automatically.",
     "cta": "Get started",
     "login": "I already have an account",
     "feature1Title": "Hierarchical",
@@ -298,7 +298,7 @@
     "statTorrents": "Torrents",
     "statLatest": "Latest",
     "introMeta": "{title} is {type, select, TV {a TV series} MOVIE {a movie} OVA {an OVA} ONA {an ONA} SPECIAL {a special} OTHER {a series} none {a series} other {a {typeLabel}}}{origin, select, none {} other { from {originLabel}}}{year, select, none {} other { that premiered in {year}}}. Season {season}{airDay, select, none {} other {, airing {airDayLabel}}}. Status: {statusLabel}.",
-    "introBody": "acg-rss has collected {episodes} episodes and {torrents} releases for this series, all aggregated automatically from RSS feeds and filed under each episode by subgroup and resolution. Use the episode buttons to browse releases per episode, or the download buttons to grab them directly.",
+    "introBody": "wami-acg has collected {episodes} episodes and {torrents} releases for this series, all aggregated automatically from RSS feeds and filed under each episode by subgroup and resolution. Use the episode buttons to browse releases per episode, or the download buttons to grab them directly.",
     "episodeIntro": "All releases of this episode were aggregated automatically from RSS feeds and filed by subgroup and resolution — pick a suitable one from the list below.",
     "play": "Watch online",
     "downloadLatest": "Download latest",

@@ -1,10 +1,10 @@
 {
   "Metadata": {
-    "title": "acg-rss — RSS アグリゲーター & ダウンロードマネージャー",
+    "title": "wami-acg — RSS アグリゲーター & ダウンロードマネージャー",
     "description": "Torrent の RSS フィードを集約し、スマートルールでマッチングして、qBittorrent に自動でダウンロードをプッシュします。"
   },
   "common": {
-    "appName": "acg-rss",
+    "appName": "wami-acg",
     "tagline": "RSS アグリゲーター & ダウンロードマネージャー",
     "save": "保存",
     "create": "作成",

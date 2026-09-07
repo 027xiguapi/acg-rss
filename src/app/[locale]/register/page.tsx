@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { redirect } from "next/navigation";
-import { Magnet } from "lucide-react";
 import { Link } from "@/i18n/navigation";
+import { BrandLogo } from "@/components/brand-logo";
 import {
   Card,
   CardContent,
@@ -42,10 +42,8 @@ export default async function RegisterPage({
     <div className="flex min-h-screen flex-col">
       <header className="flex h-14 items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2 font-semibold">
-          <span className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Magnet className="size-4" />
-          </span>
-          acg-rss
+          <BrandLogo />
+          wami-acg
         </Link>
         <div className="flex items-center gap-2">
           <LocaleSwitcher />

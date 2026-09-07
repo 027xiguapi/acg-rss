@@ -82,7 +82,7 @@ async function main(): Promise<void> {
 
     const content = (row[col.content] ?? "").trim();
     // English title sits at the head of content as "Title" ….
-    const match = /^"([^"]+)"\s*(.*)$/s.exec(content);
+    const match = /^"([^"]+)"\s*([\s\S]*)$/.exec(content);
     if (!match || !match[1].trim()) {
       skipped.push(bangumiId);
       continue;

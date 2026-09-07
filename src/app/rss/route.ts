@@ -19,8 +19,8 @@ export async function GET(request: Request) {
 
   const xml = renderRss(
     {
-      title: "acg-rss",
-      description: "acg-rss — latest releases across all tracked series",
+      title: "wami-acg",
+      description: "wami-acg — latest releases across all tracked series",
       link: `${base}/rss`,
     },
     toRssItems(base, torrents)

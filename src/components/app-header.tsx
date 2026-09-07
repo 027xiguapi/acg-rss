@@ -1,9 +1,10 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Download, Home, Magnet } from "lucide-react";
+import { Download, Home } from "lucide-react";
 import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
+import { BrandLogo } from "@/components/brand-logo";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { HeaderSearch } from "@/components/header-search";
 import { LocaleSwitcher } from "@/components/locale-switcher";
@@ -40,9 +41,7 @@ export function AppHeader({
     <header className="sticky top-0 z-30 border-b bg-background/80 backdrop-blur">
       <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-4 px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex shrink-0 items-center gap-2 font-semibold">
-          <span className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Magnet className="size-4" />
-          </span>
+          <BrandLogo />
           <span className="hidden sm:inline">{tCommon("appName")}</span>
         </Link>
 

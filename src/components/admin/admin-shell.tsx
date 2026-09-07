@@ -2,10 +2,11 @@
 
 import * as React from "react";
 import { useTranslations } from "next-intl";
-import { Download, ExternalLink, Languages, ListVideo, Rss, Shield, Tv, UserCog, Users } from "lucide-react";
+import { Download, ExternalLink, Languages, ListVideo, Rss, Tv, UserCog, Users } from "lucide-react";
 import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { BrandLogo } from "@/components/brand-logo";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { logoutAction } from "@/server/auth/actions";
@@ -52,9 +53,7 @@ export function AdminShell({
               href="/"
               className="flex shrink-0 items-center gap-2 font-semibold transition-colors hover:text-primary"
             >
-              <span className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
-                <Shield className="size-4" />
-              </span>
+              <BrandLogo />
               <span className="hidden sm:inline">{tCommon("appName")}</span>
             </Link>
             <span className="rounded-md bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
