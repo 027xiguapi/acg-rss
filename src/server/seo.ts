@@ -1,27 +1,66 @@
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, isNotNull, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { bangumi, bangumiEpisodes, bangumiInfos, episodeInfos } from "@/db/schema";
+import {
+  bangumi,
+  bangumiEpisodes,
+  bangumiInfos,
+  episodeInfos,
+  torrentItems,
+} from "@/db/schema";
 
-/** One indexable detail page: its id and last modification time. */
-export interface SeoPath {
+/** One detail page listed in /sitemap.xml. */
+export interface SitemapDetailPath {
+  kind: "bangumi" | "episode";
   id: number;
   lastModified: Date;
 }
 
-/** Every tracked bangumi id with its last modification time. */
-export async function listBangumiPaths(): Promise<SeoPath[]> {
-  return db
-    .select({ id: bangumi.id, lastModified: bangumi.updatedAt })
-    .from(bangumi)
-    .orderBy(desc(bangumi.updatedAt));
-}
+/**
+ * The most recently active detail pages (series + episodes), capped at
+ * `limit` in total, so the sitemap stays small even when the catalog holds
+ * thousands of series.
+ *
+ * Series are ranked by their newest release rather than `bangumi.updated_at`
+ * (which only moves on admin edits), so actively-airing series surface first;
+ * episodes are ranked by their own last update. Both lists are merged on that
+ * recency and truncated together, so the two kinds compete fairly.
+ */
+export async function listDetailPathsForSitemap(
+  limit: number
+): Promise<SitemapDetailPath[]> {
+  if (limit <= 0) return [];
+  const newestRelease =
+    sql<Date>`max(coalesce(${torrentItems.publishTime}, ${torrentItems.createdAt}))`;
+  const [seriesRows, episodeRows] = await Promise.all([
+    db
+      .select({ id: torrentItems.bangumiId, lastModified: newestRelease })
+      .from(torrentItems)
+      .where(isNotNull(torrentItems.bangumiId))
+      .groupBy(torrentItems.bangumiId)
+      .orderBy(desc(newestRelease))
+      .limit(limit),
+    db
+      .select({ id: bangumiEpisodes.id, lastModified: bangumiEpisodes.updatedAt })
+      .from(bangumiEpisodes)
+      .orderBy(desc(bangumiEpisodes.updatedAt))
+      .limit(limit),
+  ]);
 
-/** Every episode id with its last modification time. */
-export async function listEpisodePaths(): Promise<SeoPath[]> {
-  return db
-    .select({ id: bangumiEpisodes.id, lastModified: bangumiEpisodes.updatedAt })
-    .from(bangumiEpisodes)
-    .orderBy(desc(bangumiEpisodes.updatedAt));
+  const merged: SitemapDetailPath[] = [
+    ...seriesRows.map((row) => ({
+      kind: "bangumi" as const,
+      // Non-null is guaranteed by the isNotNull filter above.
+      id: row.id as number,
+      lastModified: new Date(row.lastModified),
+    })),
+    ...episodeRows.map((row) => ({
+      kind: "episode" as const,
+      id: row.id,
+      lastModified: row.lastModified,
+    })),
+  ];
+  merged.sort((a, b) => b.lastModified.getTime() - a.lastModified.getTime());
+  return merged.slice(0, limit);
 }
 
 /** One series as listed in /llms.txt. */

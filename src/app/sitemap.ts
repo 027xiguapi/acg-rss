@@ -2,10 +2,17 @@ import type { MetadataRoute } from "next";
 import { routing } from "@/i18n/routing";
 import { getPathname } from "@/i18n/navigation";
 import { absoluteUrl } from "@/lib/site";
-import { listBangumiPaths, listEpisodePaths } from "@/server/seo";
+import { listDetailPathsForSitemap } from "@/server/seo";
 
 // ISR: refresh hourly so newly linked releases surface without a rebuild.
 export const revalidate = 3600;
+
+/**
+ * Cap on detail pages (series + episodes) listed in the sitemap. The catalog
+ * can hold thousands of series, so the sitemap lists only the most recently
+ * active pages rather than every id — keeps the document small and fresh.
+ */
+const DETAIL_LIMIT = 50;
 
 type ChangeFrequency = MetadataRoute.Sitemap[number]["changeFrequency"];
 
@@ -61,18 +68,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     entry(route.path, route.priority, route.changeFrequency)
   );
 
-  // Dynamic detail pages. Degrade gracefully when the database is
-  // unreachable (e.g. a build without one) instead of failing the sitemap.
+  // Dynamic detail pages, capped at DETAIL_LIMIT. Degrade gracefully when the
+  // database is unreachable (e.g. a build without one) instead of failing.
   try {
-    const [bangumiPaths, episodePaths] = await Promise.all([
-      listBangumiPaths(),
-      listEpisodePaths(),
-    ]);
-    for (const item of bangumiPaths) {
-      entries.push(entry(`/bangumi/${item.id}`, 0.7, "weekly", item.lastModified));
-    }
-    for (const item of episodePaths) {
-      entries.push(entry(`/episode/${item.id}`, 0.6, "weekly", item.lastModified));
+    const detailPaths = await listDetailPathsForSitemap(DETAIL_LIMIT);
+    for (const item of detailPaths) {
+      const isSeries = item.kind === "bangumi";
+      entries.push(
+        entry(
+          isSeries ? `/bangumi/${item.id}` : `/episode/${item.id}`,
+          isSeries ? 0.7 : 0.6,
+          "weekly",
+          item.lastModified
+        )
+      );
     }
   } catch (error) {
     console.error("[sitemap] skipping dynamic routes:", error);
