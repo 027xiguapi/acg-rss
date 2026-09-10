@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { redirect } from "next/navigation";
-import { Link } from "@/i18n/navigation";
+import { Link, redirect } from "@/i18n/navigation";
 import { BrandLogo } from "@/components/brand-logo";
 import {
   Card,
@@ -34,7 +33,7 @@ export default async function LoginPage({
   setRequestLocale(locale);
 
   const user = await getSessionUser();
-  if (user) redirect(`/${locale}`);
+  if (user) redirect({ href: "/", locale });
 
   // Only offer buttons for providers whose env keys are configured, matching
   // the providers actually enabled in src/auth.ts.

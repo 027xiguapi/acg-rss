@@ -9,6 +9,7 @@ import {
   setRequestLocale,
 } from "next-intl/server";
 import { routing } from "@/i18n/routing";
+import { SITE_URL } from "@/lib/site";
 import { ToastProvider } from "@/components/toast";
 import "../globals.css";
 
@@ -36,6 +37,7 @@ export async function generateMetadata({
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "Metadata" });
   return {
+    metadataBase: new URL(SITE_URL),
     title: {
       default: t("title"),
       template: `%s · wami-acg`,

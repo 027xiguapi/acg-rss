@@ -3,7 +3,7 @@
 import { eq, sql } from "drizzle-orm";
 import { AuthError } from "next-auth";
 import { getLocale } from "next-intl/server";
-import { redirect } from "next/navigation";
+import { redirect, getPathname } from "@/i18n/navigation";
 import { z } from "zod";
 import { db } from "@/db";
 import { users } from "@/db/schema";
@@ -79,7 +79,7 @@ export async function registerAction(
     throw error;
   }
   const locale = await getLocale();
-  redirect(`/${locale}`);
+  return redirect({ href: "/", locale });
 }
 
 export async function loginAction(
@@ -100,7 +100,7 @@ export async function loginAction(
     throw error;
   }
   const locale = await getLocale();
-  redirect(`/${locale}`);
+  return redirect({ href: "/", locale });
 }
 
 /** Sign in with an OAuth provider (buttons on the login page). */
@@ -108,11 +108,11 @@ export async function oauthSignInAction(
   provider: "github" | "google"
 ): Promise<void> {
   const locale = await getLocale();
-  await signIn(provider, { redirectTo: `/${locale}` });
+  await signIn(provider, { redirectTo: getPathname({ href: "/", locale }) });
 }
 
 export async function logoutAction(): Promise<void> {
   await signOut({ redirect: false });
   const locale = await getLocale();
-  redirect(`/${locale}/login`);
+  redirect({ href: "/login", locale });
 }
