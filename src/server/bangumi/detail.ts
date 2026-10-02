@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { and, desc, eq, isNull, max, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { bangumi, bangumiEpisodes, bangumiInfos, torrentItems } from "@/db/schema";
@@ -68,7 +69,9 @@ export async function loadBangumi(id: number): Promise<BangumiWithTitle | null> 
   return { ...row, title: primary[0]?.title ?? "" };
 }
 
-export async function loadBangumiDetail(bangumiId: number): Promise<BangumiDetail | null> {
+// React-cached so generateMetadata and the page render share one query.
+export const loadBangumiDetail = cache(
+  async function loadBangumiDetail(bangumiId: number): Promise<BangumiDetail | null> {
   const item = await loadBangumi(bangumiId);
   if (!item) return null;
 
@@ -175,4 +178,4 @@ export async function loadBangumiDetail(bangumiId: number): Promise<BangumiDetai
     related,
     bestHref: bestTorrent ? (bestTorrent.magnet ?? bestTorrent.torrentUrl) : null,
   };
-}
+});

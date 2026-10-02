@@ -1,7 +1,11 @@
+import type { Metadata } from "next";
 import { getLocale } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
 import { getAdminUser } from "@/server/auth/session";
 import { AdminShell } from "@/components/admin/admin-shell";
+
+/** Defense in depth: robots.txt disallows /admin, never index it either. */
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 /** Admin guard + shared chrome for all management pages under /admin. */
 export default async function AdminLayout({

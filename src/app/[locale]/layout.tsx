@@ -9,7 +9,8 @@ import {
   setRequestLocale,
 } from "next-intl/server";
 import { routing } from "@/i18n/routing";
-import { SITE_URL } from "@/lib/site";
+import { SITE_URL, absoluteUrl } from "@/lib/site";
+import { ogLocale } from "@/lib/seo";
 import { ToastProvider } from "@/components/toast";
 import "../globals.css";
 
@@ -43,6 +44,21 @@ export async function generateMetadata({
       template: `%s · wami-acg`,
     },
     description: t("description"),
+    openGraph: {
+      siteName: "wami-acg",
+      type: "website",
+      title: t("title"),
+      description: t("description"),
+      url: SITE_URL,
+      images: [{ url: absoluteUrl("/logo.png"), width: 1024, height: 430 }],
+      locale: ogLocale(locale),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: t("title"),
+      description: t("description"),
+      images: [absoluteUrl("/logo.png")],
+    },
   };
 }
 

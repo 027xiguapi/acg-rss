@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { bangumi, bangumiEpisodes, bangumiInfos, episodeInfos } from "@/db/schema";
@@ -58,7 +59,9 @@ export async function loadEpisode(
  * basic info, the episode picker and related recommendations. Prev/next
  * are simply the neighbours of this episode inside episodesAsc.
  */
-export async function loadEpisodeDetail(episodeId: number): Promise<EpisodeDetail | null> {
+// React-cached so generateMetadata and the page render share one query.
+export const loadEpisodeDetail = cache(
+  async function loadEpisodeDetail(episodeId: number): Promise<EpisodeDetail | null> {
   const row = await loadEpisode(episodeId);
   if (!row) return null;
   const { episode, series } = row;
@@ -91,4 +94,4 @@ export async function loadEpisodeDetail(episodeId: number): Promise<EpisodeDetai
     bestHref: bucket?.href ?? null,
     infos: infoRows,
   };
-}
+});

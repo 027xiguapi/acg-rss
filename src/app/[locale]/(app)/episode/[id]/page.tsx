@@ -12,10 +12,18 @@ import { EpisodePicker } from "@/components/bangumi/detail/episode-picker";
 import { EpisodeSection } from "@/components/bangumi/detail/episode-section";
 import { SocialBar } from "@/components/bangumi/detail/social-bar";
 import { CommentSection } from "@/components/bangumi/detail/comment-section";
+import { JsonLd, breadcrumbJsonLd } from "@/components/seo/json-ld";
 import { posterTint } from "@/lib/poster";
+import { resolveCover } from "@/lib/cover";
+import { absoluteUrl } from "@/lib/site";
+import {
+  languageAlternates,
+  localePathUrl,
+  metaDescription,
+} from "@/lib/seo";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
-import { loadEpisode, loadEpisodeDetail } from "@/server/bangumi/episode";
+import { loadEpisodeDetail } from "@/server/bangumi/episode";
 import { loadEpisodeSocial } from "@/server/bangumi/social";
 import { getAdminUser, getSessionUser } from "@/server/auth/session";
 
@@ -25,8 +33,51 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
-  const row = await loadEpisode(Number(id));
-  return { title: row ? `${row.series.title} · #${row.episode.number}` : "Episode" };
+  const episodeId = Number(id);
+  if (!Number.isInteger(episodeId) || episodeId <= 0) return {};
+  const detail = await loadEpisodeDetail(episodeId);
+  if (!detail) return {};
+  const { episode, series } = detail;
+
+  const locale = await getLocale();
+  const t = await getTranslations("bangumi");
+  const path = `/episode/${episode.id}`;
+
+  const info =
+    detail.infos.find((row) => row.lang === locale) ?? detail.infos[0];
+  const infoTitle = info?.title ?? null;
+  const synopsis = info?.content ?? null;
+  const title = infoTitle ?? t("episodeTitle", { episode: episode.number });
+  const description = metaDescription(synopsis, t("episodeIntro"));
+
+  const cover = resolveCover(detail.seriesDetail.coverName, series.coverUrl);
+  const rawCover = episode.coverUrl ?? cover;
+  const ogImage = rawCover
+    ? rawCover.startsWith("http")
+      ? rawCover
+      : absoluteUrl(rawCover)
+    : null;
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: localePathUrl(path, locale),
+      languages: languageAlternates(path),
+    },
+    openGraph: {
+      title,
+      description,
+      type: "video.episode",
+      url: localePathUrl(path, locale),
+      ...(ogImage ? { images: [{ url: ogImage }] } : {}),
+    },
+    twitter: {
+      card: ogImage ? "summary_large_image" : "summary",
+      title,
+      description,
+    },
+  };
 }
 
 /**
@@ -56,8 +107,31 @@ export default async function EpisodeDetailPage({ params }: PageProps) {
   const infoTitle = info?.title ?? null;
   const synopsis = info?.content ?? null;
 
+  const tNav = await getTranslations("nav");
+  const episodeJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "TVEpisode",
+    name: infoTitle ?? t("episodeTitle", { episode: episode.number }),
+    episodeNumber: episode.number,
+    partOfSeries: {
+      "@type": "TVSeries",
+      name: series.title,
+      url: absoluteUrl(`/bangumi/${series.id}`),
+    },
+    ...(synopsis ? { description: synopsis } : {}),
+    ...(episode.coverUrl ? { image: episode.coverUrl } : {}),
+  };
+
   return (
     <div className="flex flex-col gap-6">
+      <JsonLd data={episodeJsonLd} />
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: tNav("home"), path: "/" },
+          { name: series.title, path: `/bangumi/${series.id}` },
+          { name: infoTitle ?? t("episodeTitle", { episode: episode.number }) },
+        ])}
+      />
       <Breadcrumb
         items={[
           { label: t("title"), href: "/bangumi" },

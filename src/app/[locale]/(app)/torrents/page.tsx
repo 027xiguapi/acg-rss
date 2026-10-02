@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { and, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Download, Search } from "lucide-react";
+import { languageAlternates, localePathUrl } from "@/lib/seo";
 import { db } from "@/db";
 import { bangumiInfos, torrentItems } from "@/db/schema";
 import { formatBytes, formatDateTime } from "@/lib/format";
@@ -25,10 +26,26 @@ import { Pagination } from "@/components/admin/pagination";
 import { buttonVariants } from "@/components/ui/button";
 import { TorrentRowActions } from "@/components/torrents/torrent-row-actions";
 
-export const metadata: Metadata = { title: "Torrents" };
-
 interface PageProps {
+  params: Promise<{ locale: string }>;
   searchParams: Promise<{ q?: string; page?: string; pageSize?: string }>;
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: PageProps["params"];
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "torrents" });
+  return {
+    title: t("title"),
+    description: t("appSubtitle"),
+    alternates: {
+      canonical: localePathUrl("/torrents", locale),
+      languages: languageAlternates("/torrents"),
+    },
+  };
 }
 
 /**

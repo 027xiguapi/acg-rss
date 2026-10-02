@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { Tv } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { EmptyState } from "@/components/empty-state";
 import { Breadcrumb } from "@/components/breadcrumb";
 import { BangumiHeader } from "@/components/bangumi/detail/bangumi-header";
@@ -12,11 +12,18 @@ import { EpisodePicker } from "@/components/bangumi/detail/episode-picker";
 import { EpisodeSection } from "@/components/bangumi/detail/episode-section";
 import { SocialBar } from "@/components/bangumi/detail/social-bar";
 import { CommentSection } from "@/components/bangumi/detail/comment-section";
-import { loadBangumi, loadBangumiDetail } from "@/server/bangumi/detail";
+import { JsonLd, breadcrumbJsonLd } from "@/components/seo/json-ld";
+import { loadBangumiDetail } from "@/server/bangumi/detail";
 import { loadBangumiSocial } from "@/server/bangumi/social";
 import { getAdminUser, getSessionUser } from "@/server/auth/session";
 import { resolveCover } from "@/lib/cover";
 import { posterTint } from "@/lib/poster";
+import { absoluteUrl } from "@/lib/site";
+import {
+  languageAlternates,
+  localePathUrl,
+  metaDescription,
+} from "@/lib/seo";
 import { cn } from "@/lib/utils";
 
 interface PageProps {
@@ -25,8 +32,49 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
-  const row = await loadBangumi(Number(id));
-  return { title: row?.title ?? "Bangumi" };
+  const bangumiId = Number(id);
+  if (!Number.isInteger(bangumiId) || bangumiId <= 0) return {};
+  const detail = await loadBangumiDetail(bangumiId);
+  if (!detail) return {};
+  const { item } = detail;
+
+  const locale = await getLocale();
+  const t = await getTranslations("bangumi");
+  const path = `/bangumi/${item.id}`;
+  const description = metaDescription(
+    detail.content,
+    t("introBody", {
+      episodes: detail.episodes.length,
+      torrents: detail.torrentCount,
+    })
+  );
+  const cover = resolveCover(detail.coverName, item.coverUrl);
+  const ogImage = cover
+    ? cover.startsWith("http")
+      ? cover
+      : absoluteUrl(cover)
+    : null;
+
+  return {
+    title: item.title,
+    description,
+    alternates: {
+      canonical: localePathUrl(path, locale),
+      languages: languageAlternates(path),
+    },
+    openGraph: {
+      title: item.title,
+      description,
+      type: "video.tv_show",
+      url: localePathUrl(path, locale),
+      ...(ogImage ? { images: [{ url: ogImage }] } : {}),
+    },
+    twitter: {
+      card: ogImage ? "summary_large_image" : "summary",
+      title: item.title,
+      description,
+    },
+  };
 }
 
 /**
@@ -49,9 +97,30 @@ export default async function BangumiDetailPage({ params }: PageProps) {
   const user = await getSessionUser();
   const social = await loadBangumiSocial(bangumiId, user?.id ?? null);
   const t = await getTranslations("bangumi");
+  const tNav = await getTranslations("nav");
 
   const hasContent = detail.episodes.length > 0 || detail.unparsed.length > 0;
   const cover = resolveCover(detail.coverName, item.coverUrl);
+  const coverUrl = cover
+    ? cover.startsWith("http")
+      ? cover
+      : absoluteUrl(cover)
+    : null;
+
+  const seriesJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "TVSeries",
+    name: item.title,
+    url: absoluteUrl(`/bangumi/${item.id}`),
+    ...(detail.content ? { description: detail.content } : {}),
+    ...(coverUrl ? { image: coverUrl } : {}),
+    numberOfEpisodes: detail.episodes.length,
+    ...(item.season != null
+      ? {
+          containsSeason: { "@type": "TVSeason", seasonNumber: item.season },
+        }
+      : {}),
+  };
 
   const introMeta = t("introMeta", {
     title: item.title,
@@ -68,6 +137,13 @@ export default async function BangumiDetailPage({ params }: PageProps) {
 
   return (
     <div className="flex flex-col gap-6">
+      <JsonLd data={seriesJsonLd} />
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: tNav("home"), path: "/" },
+          { name: item.title },
+        ])}
+      />
       <Breadcrumb
         items={[
           { label: t("title"), href: "/bangumi" },

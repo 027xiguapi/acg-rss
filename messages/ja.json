@@ -1,7 +1,7 @@
 {
   "Metadata": {
-    "title": "wami-acg — RSS アグリゲーター & ダウンロードマネージャー",
-    "description": "Torrent の RSS フィードを集約し、スマートルールでマッチングして、qBittorrent に自動でダウンロードをプッシュします。"
+    "title": "wami-acg — 追番管理・リリース索引",
+    "description": "放送スケジュールでアニメを追跡し、作品・話数・字幕組・画質ごとに整理されたリリースを閲覧できます。中文、English、日本語、한국어に対応。"
   },
   "common": {
     "appName": "wami-acg",

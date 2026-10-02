@@ -8,11 +8,12 @@ import { listDetailPathsForSitemap } from "@/server/seo";
 export const revalidate = 3600;
 
 /**
- * Cap on detail pages (series + episodes) listed in the sitemap. The catalog
- * can hold thousands of series, so the sitemap lists only the most recently
- * active pages rather than every id — keeps the document small and fresh.
+ * Cap on detail pages (series + episodes) listed in the sitemap. Each entry
+ * carries four hreflang alternates, so 5000 entries stay well under the
+ * sitemap size limits (50k URLs / 50MB) while covering the whole catalog —
+ * including pages the crawl can only reach through the schedule, not links.
  */
-const DETAIL_LIMIT = 50;
+const DETAIL_LIMIT = 5000;
 
 type ChangeFrequency = MetadataRoute.Sitemap[number]["changeFrequency"];
 

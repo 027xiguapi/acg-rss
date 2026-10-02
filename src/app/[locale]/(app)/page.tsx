@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Tv } from "lucide-react";
 import {
@@ -13,9 +14,27 @@ import { EmptyState } from "@/components/empty-state";
 import { DayNav } from "@/components/home/day-nav";
 import { RecentUpdates } from "@/components/home/recent-updates";
 import { UserFavorites } from "@/components/home/user-favorites";
+import { JsonLd } from "@/components/seo/json-ld";
 import { Link } from "@/i18n/navigation";
+import { SITE_URL } from "@/lib/site";
+import { languageAlternates, localePathUrl } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  return {
+    alternates: {
+      canonical: localePathUrl("/", locale),
+      languages: languageAlternates("/"),
+    },
+    openGraph: { url: localePathUrl("/", locale) },
+  };
+}
 
 /**
  * Mikan-style public index, now rendered inside the shared (app) AppShell.
@@ -37,12 +56,29 @@ export default async function HomePage({
   const year = Number.isInteger(yearNum) && yearNum > 0 ? yearNum : null;
 
   const user = await getSessionUser();
-  const [tHome, index, recent, favorites] = await Promise.all([
+  const [tHome, tMeta, index, recent, favorites] = await Promise.all([
     getTranslations("home"),
+    getTranslations("Metadata"),
     getBangumiIndex(query, year),
     getRecentBangumi(),
     user ? getUserFavorites(user.id) : Promise.resolve([]),
   ]);
+
+  const websiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "wami-acg",
+    url: SITE_URL,
+    inLanguage: ["en", "zh-CN", "ja", "ko"],
+    potentialAction: {
+      "@type": "SearchAction",
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate: `${SITE_URL}/?q={search_term_string}`,
+      },
+      "query-input": "required name=search_term_string",
+    },
+  };
 
   // Unscheduled entries are not rendered, so the empty state has to key off
   // the sections that actually appear on the schedule.
@@ -59,6 +95,8 @@ export default async function HomePage({
 
   return (
     <>
+      <JsonLd data={websiteJsonLd} />
+      <h1 className="sr-only">{tMeta("title")}</h1>
       <DayNav
         years={index.years}
         year={year}

@@ -1,7 +1,7 @@
 {
   "Metadata": {
-    "title": "wami-acg — RSS 수집기 및 다운로드 관리자",
-    "description": "토렌트 RSS 피드를 수집하고 스마트 규칙으로 매칭하여 qBittorrent에 자동으로 다운로드를 전송합니다."
+    "title": "wami-acg — 애니 추적 및 릴리스 인덱스",
+    "description": "방영 일정에 따라 애니메이션을 추적하고, 작품・에피소드・자막 제작자・화질별로 정리된 릴리스를 둘러보세요. 다국어 지원."
   },
   "common": {
     "appName": "wami-acg",

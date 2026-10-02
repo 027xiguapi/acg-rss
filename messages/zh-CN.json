@@ -1,7 +1,7 @@
 {
   "Metadata": {
-    "title": "wami-acg — RSS 聚合与下载管理",
-    "description": "聚合 Torrent RSS 源，通过智能规则匹配，自动推送下载任务到你的 qBittorrent。"
+    "title": "wami-acg — 追番管理与资源索引",
+    "description": "按放送日程追番，浏览按作品、剧集、字幕组与画质整理好的资源列表。支持中文、English、日本語、한국어。"
   },
   "common": {
     "appName": "wami-acg",

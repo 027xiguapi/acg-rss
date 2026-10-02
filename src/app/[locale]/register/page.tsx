@@ -21,7 +21,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "auth" });
-  return { title: t("registerTitle") };
+  return { title: t("registerTitle"), robots: { index: false, follow: false } };
 }
 
 export default async function RegisterPage({

@@ -1,4 +1,4 @@
-import { SITE_URL, absoluteUrl } from "@/lib/site";
+import { absoluteUrl } from "@/lib/site";
 
 /**
  * robots.txt. Served from a route handler rather than the typed
@@ -25,7 +25,6 @@ export function GET(): Response {
     "Disallow: /register",
     "Disallow: /*/register",
     "",
-    `Host: ${SITE_URL}`,
     `Sitemap: ${absoluteUrl("/sitemap.xml")}`,
     "",
   ].join("\n");
